@@ -283,6 +283,7 @@ add_executable ( ${ExecutableName}
       logindialog.cpp loginmanager.cpp uploadscoredialog.cpp breaksdialog.cpp searchComboBox.cpp
       help.cpp help.h
 
+
       ${OMR_FILES}
       ${AUDIO}
       ${SCRIPT_FILES}
@@ -390,7 +391,7 @@ if (MINGW)
       )
 
    if (OMR)
-      target_link_libraries(mscore omr mupdf freetype jbig2dec jpeg openjpeg)
+      target_link_libraries(mscore omr mupdf freetype jbig2dec jpeg mujs openjpeg z)
       if (OCR)
             target_link_libraries(mscore tesseract_api)
       endif (OCR)
@@ -495,7 +496,7 @@ else (MINGW)
       )
 
    if (OMR)
-      target_link_libraries(mscore omr mupdf freetype jbig2dec jpeg openjpeg)
+      target_link_libraries(mscore omr mupdf freetype jbig2dec jpeg mujs openjpeg z)
       if (OCR)
             target_link_libraries(mscore tesseract_api)
       endif (OCR)
