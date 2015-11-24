@@ -53,7 +53,7 @@ class MagValidator : public QValidator {
 //   MagBox
 //---------------------------------------------------------
 
-class MagBox : protected QComboBox {
+class MagBox : public QComboBox {
       Q_OBJECT
 
       double freeMag;
