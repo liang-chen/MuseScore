@@ -189,218 +189,207 @@ void OmrPage::readBarLines(int pageNo)
       //    search clef/keysig
       //--------------------------------------------------
 
-//      if (pageNo == 0) {
-//            OmrSystem* s = &_systems[0];
-//            for (int i = 0; i < s->staves().size(); ++i) {
-//                  OmrStaff* staff = &s->staves()[i];
-//                  //OmrClef clef = searchClef(s, staff);
-//                  //staff->setClef(clef);
-//
-//                  //searchKeySig(s, staff);
-//                  }
-//
-//
-//            //--------------------------------------------------
-//            //    search time signature
-//            //--------------------------------------------------
-//
-//            if (!s->staves().isEmpty()) {
-////                  OmrTimesig* ts = searchTimeSig(s);
-////                  s->measures()[0].setTimesig(ts);
-//                  }
-//            }
+      if (pageNo == 0) {
+            OmrSystem* s = &_systems[0];
+            for (int i = 0; i < s->staves().size(); ++i) {
+                  OmrStaff* staff = &s->staves()[i];
+                  OmrClef clef = searchClef(s, staff);
+                  staff->setClef(clef);
+
+                  searchKeySig(s, staff);
+                  }
+
+
+            //--------------------------------------------------
+            //    search time signature
+            //--------------------------------------------------
+
+            if (!s->staves().isEmpty()) {
+                  OmrTimesig* ts = searchTimeSig(s);
+                  s->measures()[0].setTimesig(ts);
+                  }
+            }
       }
 
 //---------------------------------------------------------
 //   searchClef
 //---------------------------------------------------------
 
-//OmrClef OmrPage::searchClef(OmrSystem* system, OmrStaff* staff)
-//      {
-//      std::vector<Pattern*> pl = {
-//            Omr::trebleclefPattern,
-//            Omr::bassclefPattern
-//            };
-//      const OmrMeasure& m = system->measures().front();
-//printf("search clef %d   %d-%d\n", staff->y(), m.x1(), m.x2());
-//
-//      int x1 = m.x1() + 2;
-//      int x2 = x1 + (m.x2() - x1)/2;
-//      //OmrPattern p = searchPattern(pl, staff->y(), x1, x2);
-//
-////      OmrClef clef(p);
-////      if (p.sym == trebleclefSym)
-////            clef.type = CLEF_G;
-////      else if (p.sym == bassclefSym)
-////            clef.type = CLEF_F;
-////      else
-////            clef.type = CLEF_G;
-////      return clef;
-//            return ClefType::G;
-//      }
+OmrClef OmrPage::searchClef(OmrSystem* system, OmrStaff* staff)
+      {
+      std::vector<Pattern*> pl = {
+            Omr::trebleclefPattern,
+            Omr::bassclefPattern
+            };
+      const OmrMeasure& m = system->measures().front();
+printf("search clef %d   %d-%d\n", staff->y(), m.x1(), m.x2());
+
+      int x1 = m.x1() + 2;
+      int x2 = x1 + (m.x2() - x1)/2;
+      OmrPattern p = searchPattern(pl, staff->y(), x1, x2);
+
+      OmrClef clef(p);
+      if (p.sym == SymId::gClef)
+          clef.type = ClefType::G;
+      else if (p.sym == SymId::fClef)
+            clef.type = ClefType::F;
+      else
+            clef.type = ClefType::G;
+      return clef;
+      }
 
 //---------------------------------------------------------
 //   searchPattern
 //---------------------------------------------------------
 
-//OmrPattern OmrPage::searchPattern(const std::vector<Pattern*>& pl, int y, int x1, int x2)
-//      {
-//      OmrPattern p;
-//      p.sym  = -1;
-//      p.prob = 0.0;
-//      for (Pattern* pattern : pl) {
-//            double val = 0.0;
-//            int xx = 0;
-//            int hw = pattern->w();
-//
-//            for (int x = x1; x < (x2 - hw); ++x) {
-//                  double val1 = pattern->match(&image(), x - pattern->base().x(), y - pattern->base().y());
-//                  if (val1 > val) {
-//                        val = val1;
-//                        xx  = x;
-//                        }
-//                  }
-//
-//            if (val > p.prob) {
-//                  p.setRect(xx, y, pattern->w(), pattern->h());
-//                  p.sym  = pattern->id();
-//                  p.prob = val;
-//                  }
-//            printf("Pattern found %d %f %d\n", pattern->id(), val, xx);
-//            }
-//      return p;
-//      }
+OmrPattern OmrPage::searchPattern(const std::vector<Pattern*>& pl, int y, int x1, int x2)
+      {
+      OmrPattern p;
+      p.sym  = SymId::noSym;
+      p.prob = 0.0;
+      for (Pattern* pattern : pl) {
+            double val = 0.0;
+            int xx = 0;
+            int hw = pattern->w();
+
+            for (int x = x1; x < (x2 - hw); ++x) {
+                  double val1 = pattern->match(&image(), x - pattern->base().x(), y - pattern->base().y());
+                  if (val1 > val) {
+                        val = val1;
+                        xx  = x;
+                        }
+                  }
+
+            if (val > p.prob) {
+                  p.setRect(xx, y, pattern->w(), pattern->h());
+                  p.sym  = pattern->id();
+                  p.prob = val;
+                  }
+            printf("Pattern found %d %f %d\n", pattern->id(), val, xx);
+            }
+      return p;
+      }
 
 //---------------------------------------------------------
 //   searchTimeSig
 //---------------------------------------------------------
 
-//OmrTimesig* OmrPage::searchTimeSig(OmrSystem* system)
-//      {
-//      Pattern pl[10];
-//      pl[0] = Pattern(zeroSym,  &symbols[0][zeroSym],  _spatium);
-//      pl[1] = Pattern(oneSym,   &symbols[0][oneSym],   _spatium);
-//      pl[2] = Pattern(twoSym,   &symbols[0][twoSym],   _spatium);
-//      pl[3] = Pattern(threeSym, &symbols[0][threeSym], _spatium);
-//      pl[4] = Pattern(fourSym,  &symbols[0][fourSym],  _spatium);
-//      pl[5] = Pattern(fiveSym,  &symbols[0][fiveSym],  _spatium);
-//      pl[6] = Pattern(sixSym,   &symbols[0][sixSym],   _spatium);
-//      pl[7] = Pattern(sevenSym, &symbols[0][sevenSym], _spatium);
-//      pl[8] = Pattern(eightSym, &symbols[0][eightSym], _spatium);
-//      pl[9] = Pattern(nineSym,  &symbols[0][nineSym],  _spatium);
-//
-//      int z = -1;
-//      int n = -1;
-//      double zval = 0;
-//      double nval = 0;
-//      QRect rz, rn;
-//
-//      int y         = system->staves().front().y();
-//      OmrMeasure* m = &system->measures().front();
-//      int x1        = m->x1();
-//
-//      for (int i = 0; i < 10; ++i) {
-//            Pattern* pattern = &pl[i];
-//            double val = 0.0;
-//            int hh     = pattern->h();
-//            int hw     = pattern->w();
-//            int x2     = m->x2() - hw;
-//            QRect r;
-//
-//            for (int x = x1; x < x2; ++x) {
-//                  double val1 = pattern->match(&image(), x, y);
-//                  if (val1 > val) {
-//                        val = val1;
-//                        r = QRect(x, y, hw, hh);
-//                        }
-//                  }
-//
-//            if (val > timesigTH && val > zval) {
-//                  z = i;
-//                  zval = val;
-//                  rz   = r;
-//                  }
-////            printf("   found %d %f\n", i, val);
-//            }
-//
-//      if (z < 0)
-//            return 0;
-//      y = system->staves().front().y() + lrint(_spatium * 2);
-//
-//      x1 = rz.x();
-//      int x2 = x1 + 1;
-//      OmrTimesig* ts = 0;
-//      for (int i = 0; i < 10; ++i) {
-//            Pattern* pattern = &pl[i];
-//            double val = 0.0;
-//            int hh     = pattern->h();
-//            int hw     = pattern->w();
-//            QRect r;
-//
-//            for (int x = x1; x < x2; ++x) {
-//                  double val1 = pattern->match(&image(), x, y);
-//                  if (val1 > val) {
-//                        val = val1;
-//                        r   = QRect(x, y, hw, hh);
-//                        }
-//                  }
-//
-//            if (val > timesigTH && val > nval) {
-//                  n = i;
-//                  nval = val;
-//                  rn   = r;
-//                  }
-////            printf("   found %d %f\n", i, val);
-//            }
-//      if (n > 0) {
-//            ts = new OmrTimesig(rz | rn);
-//            ts->timesig = Fraction(z, n);
-//            printf("timesig  %d/%d\n", z, n);
-//            }
-//      return ts;
-//      }
+OmrTimesig* OmrPage::searchTimeSig(OmrSystem* system)
+      {
+      
+
+      int z = -1;
+      int n = -1;
+      double zval = 0;
+      double nval = 0;
+      QRect rz, rn;
+
+      int y         = system->staves().front().y();
+      OmrMeasure* m = &system->measures().front();
+      int x1        = m->x1();
+
+      for (int i = 0; i < 10; ++i) {
+          Pattern* pattern = Omr::timesigPattern[i];
+            double val = 0.0;
+            int hh     = pattern->h();
+            int hw     = pattern->w();
+            int x2     = m->x2() - hw;
+            QRect r;
+
+            for (int x = x1; x < x2; ++x) {
+                  double val1 = pattern->match(&image(), x, y);
+                  if (val1 > val) {
+                        val = val1;
+                        r = QRect(x, y, hw, hh);
+                        }
+                  }
+
+            if (val > timesigTH && val > zval) {
+                  z = i;
+                  zval = val;
+                  rz   = r;
+                  }
+//            printf("   found %d %f\n", i, val);
+            }
+
+      if (z < 0)
+            return 0;
+      y = system->staves().front().y() + lrint(_spatium * 2);
+
+      x1 = rz.x();
+      int x2 = x1 + 1;
+      OmrTimesig* ts = 0;
+      for (int i = 0; i < 10; ++i) {
+            Pattern* pattern = Omr::timesigPattern[i];
+            double val = 0.0;
+            int hh     = pattern->h();
+            int hw     = pattern->w();
+            QRect r;
+
+            for (int x = x1; x < x2; ++x) {
+                  double val1 = pattern->match(&image(), x, y);
+                  if (val1 > val) {
+                        val = val1;
+                        r   = QRect(x, y, hw, hh);
+                        }
+                  }
+
+            if (val > timesigTH && val > nval) {
+                  n = i;
+                  nval = val;
+                  rn   = r;
+                  }
+//            printf("   found %d %f\n", i, val);
+            }
+      if (n > 0) {
+            ts = new OmrTimesig(rz | rn);
+            ts->timesig = Fraction(z, n);
+            printf("timesig  %d/%d\n", z, n);
+            }
+      return ts;
+      }
 
 //---------------------------------------------------------
 //   searchKeySig
 //---------------------------------------------------------
 
-//void OmrPage::searchKeySig(OmrSystem* system, OmrStaff* staff)
-//      {
-//      Pattern* pl[2];
-//      pl[0] = Omr::sharpPattern;
-//      pl[1] = Omr::flatPattern;
-//
-//      double zval = 0;
-//
-//      int y         = system->staves().front().y();
-//      OmrMeasure* m = &system->measures().front();
-//      int x1        = m->x1();
-//
-//      for (int i = 0; i < 2; ++i) {
-//            Pattern* pattern = pl[i];
-//            double val = 0.0;
-//            int hh     = pattern->h();
-//            int hw     = pattern->w();
-//            int x2     = m->x2() - hw;
-//            QRect r;
-//
-//            for (int x = x1; x < x2; ++x) {
-//                  double val1 = pattern->match(&image(), x, y - hh/2);
-//                  if (val1 > val) {
-//                        val = val1;
-//                        r = QRect(x, y, hw, hh);
-//                        }
-//                  }
-//
-//            if (val > keysigTH && val > zval) {
-//                  zval = val;
-//                  OmrKeySig key(r);
-//                  key.type = i == 0 ? 1 : -1;
-//                  staff->setKeySig(key);
-//                  }
-//            printf(" key found %d %f\n", i, val);
-//            }
-//      }
+void OmrPage::searchKeySig(OmrSystem* system, OmrStaff* staff)
+      {
+      Pattern* pl[2];
+      pl[0] = Omr::sharpPattern;
+      pl[1] = Omr::flatPattern;
+
+      double zval = 0;
+
+      int y         = system->staves().front().y();
+      OmrMeasure* m = &system->measures().front();
+      int x1        = m->x1();
+
+      for (int i = 0; i < 2; ++i) {
+            Pattern* pattern = pl[i];
+            double val = 0.0;
+            int hh     = pattern->h();
+            int hw     = pattern->w();
+            int x2     = m->x2() - hw;
+            QRect r;
+
+            for (int x = x1; x < x2; ++x) {
+                  double val1 = pattern->match(&image(), x, y - hh/2);
+                  if (val1 > val) {
+                        val = val1;
+                        r = QRect(x, y, hw, hh);
+                        }
+                  }
+
+            if (val > keysigTH && val > zval) {
+                  zval = val;
+                  OmrKeySig key(r);
+                  key.type = i == 0 ? 1 : -1;
+                  staff->setKeySig(key);
+                  }
+            printf(" key found %d %f\n", i, val);
+            }
+      }
 
 //---------------------------------------------------------
 //   maxP

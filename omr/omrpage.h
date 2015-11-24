@@ -206,10 +206,10 @@ class OmrPage {
       double xproject2(int y);
       int xproject(const uint* p, int wl);
       void radonTransform(ulong* projection, int w, int n, const QRect&);
-      //OmrTimesig* searchTimeSig(OmrSystem* system);
-      //OmrClef searchClef(OmrSystem* system, OmrStaff* staff);
-      //void searchKeySig(OmrSystem* system, OmrStaff* staff);
-      //OmrPattern searchPattern(const std::vector<Pattern*>& pl, int y, int x1, int x2);
+      OmrTimesig* searchTimeSig(OmrSystem* system);
+      OmrClef searchClef(OmrSystem* system, OmrStaff* staff);
+      void searchKeySig(OmrSystem* system, OmrStaff* staff);
+      OmrPattern searchPattern(const std::vector<Pattern*>& pl, int y, int x1, int x2);
 
    public:
       OmrPage(Omr* _parent);
