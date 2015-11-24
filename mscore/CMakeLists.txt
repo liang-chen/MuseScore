@@ -391,10 +391,7 @@ if (MINGW)
       )
 
    if (OMR)
-<<<<<<< HEAD
-=======
       # target_link_libraries(mscore omr mupdf freetype jbig2dec jpeg openjpeg)
->>>>>>> f6ecc48... re-compilation
 	set(LIB_LIBZ /usr/local/lib/libz.a)
 	set(LIB_GLFW /usr/local/lib/libglfw.a)
       target_link_libraries(mscore omr mupdf freetype jbig2dec jpeg mujs openjpeg openjp2 ${LIB_LIBZ} curl ${LIB_GLFW} ssl crypto m)
@@ -502,10 +499,7 @@ else (MINGW)
       )
 
    if (OMR)
-<<<<<<< HEAD
-=======
       # target_link_libraries(mscore omr mupdf freetype jbig2dec jpeg openjpeg)
->>>>>>> f6ecc48... re-compilation
 	set(LIB_LIBZ /usr/local/lib/libz.a)
 	set(LIB_GLFW /usr/local/lib/libglfw.a)
       target_link_libraries(mscore omr mupdf freetype jbig2dec jpeg mujs openjpeg openjp2 ${LIB_LIBZ} curl ${LIB_GLFW} ssl crypto m)
