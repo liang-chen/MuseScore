@@ -245,9 +245,9 @@ Score::FileError importPdf(Score* score, const QString& path)
       pF.setOddBottomMargin(0);
       score->setPageFormat(pF);
 
-          score->style()->set(StyleIdx::minSystemDistance,   Spatium(omr->systemDistance()));
-          score->style()->set(StyleIdx::maxSystemDistance,   Spatium(omr->systemDistance()));
-          score->style()->set(StyleIdx::akkoladeDistance,    Spatium(omr->staffDistance()));
+      score->style()->set(StyleIdx::minSystemDistance,   Spatium(omr->systemDistance()));
+      score->style()->set(StyleIdx::maxSystemDistance,   Spatium(omr->systemDistance()));
+      score->style()->set(StyleIdx::akkoladeDistance,    Spatium(omr->staffDistance()));
 
       Part* part   = new Part(score);
       Staff* staff1 = new Staff(score);
