@@ -439,7 +439,7 @@ void OmrSystem::searchBarLines()
       int y1  = r1.y();
       int y2  = r2.y() + r2.height();
       int h   = y2 - y1 + 1;
-      int th  = h / 2;     // threshold
+      int th  = h / 2;     // threshold, data score for null model
 
       int vpw = x2-x1;
       float vp[vpw];
