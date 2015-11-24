@@ -31,7 +31,7 @@
 #include "libmscore/box.h"
 #include "libmscore/sym.h"
 #include "libmscore/note.h"
-//#include "pattern.h"
+#include "pattern.h"
 
 namespace Ms {
 

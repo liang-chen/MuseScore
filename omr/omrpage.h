@@ -26,6 +26,7 @@
 #include "libmscore/fraction.h"
 #include "libmscore/clef.h"
 #include "libmscore/xml.h"
+#include "libmscore/sym.h"
 
 namespace Ms {
 
@@ -33,7 +34,7 @@ class Omr;
 class Score;
 class Xml;
 class XmlReader;
-//class Pattern;
+class Pattern;
 class OmrPage;
 
 
@@ -53,8 +54,8 @@ struct HLine {
 
 class OmrPattern : public QRect {
    public:
-      OmrPattern() : QRect(), sym(-1), prob(0.0) {}
-      int sym;
+    OmrPattern() : QRect(), sym(SymId::noSym), prob(0.0) {}
+      SymId sym;
       double prob;
       };
 
