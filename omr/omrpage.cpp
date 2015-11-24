@@ -419,6 +419,12 @@ int maxP(int* projection, int x1, int x2)
       return xx;
       }
 
+struct BAR_STATE{
+    int x;
+    int status;//0 represents white space, 1 represents bar
+    };
+    
+    
 //---------------------------------------------------------
 //   searchBarLines
 //---------------------------------------------------------
@@ -433,48 +439,143 @@ void OmrSystem::searchBarLines()
       int y1  = r1.y();
       int y2  = r2.y() + r2.height();
       int h   = y2 - y1 + 1;
-      int th  = h * 4 / 6;     // threshold
+      int th  = h / 2;     // threshold
 
       int vpw = x2-x1;
-      int vp[vpw];
-      memset(vp, 0, sizeof(int) * vpw);
+      float vp[vpw];
+      memset(vp, 0, sizeof(float) * vpw);
 
-      //
-      // compute vertical projections
-      //
-
-      for (int x = x1; x < x2; ++x) {
-            int dots = 0;
-            for (int y = y1; y < y2; ++y) {
+      
+          
+      //using note constraints
+          searchNotes();
+          
+          int note_constraints[x2-x1];
+          foreach(OmrNote* n, r1.notes()){
+              for(int x = n->x(); x <= n->x() + n->width(); ++x)
+                  note_constraints[x-x1] = 1;
+          }
+          foreach(OmrNote* n, r2.notes()){
+              for(int x = n->x(); x <= n->x() + n->width(); ++x)
+                  note_constraints[x-x1] = 1;
+          }
+          
+          //
+          // compute vertical projections
+          //
+          
+          for (int x = x1; x < x2; ++x) {
+              int dots = 0;
+              for (int y = y1; y < y2; ++y) {
                   if (_page->dot(x, y))
-                        ++dots;
+                      ++dots;
+              }
+              if(!note_constraints[x-x1])
+                  vp[x - x1] = dots - th;
+              else vp[x - x1] = -HUGE_VAL;
+          }
+          
+          float scores[x2-x1+1][2];
+          BAR_STATE pred[x2-x1+1][2];
+          BAR_STATE bs;
+          
+          //initialization
+          bs.x = -1; bs.status = -1;
+          for (int x = x1; x <= x2; ++x) {
+              int i = x - x1;
+              for(int status = 0; status <= 1; ++status){
+                  scores[i][status] = -HUGE_VAL;
+                  pred[i][status] = bs;
+              }
+          }
+          scores[0][0] = 0;
+          
+          //forward pass
+          
+          for (int x = x1; x < x2; ++x) {
+              int i = x - x1;
+              
+              for(int cur = 0; cur <= 1; ++cur){
+                  //current state
+                  if(scores[i][cur] < -1000) continue;
+                  
+                  if(cur){
+                      scores[i][cur] += vp[i];
+                      int next = 0;
+                      int step = 3*_page->spatium();//constraints between adjacent barlines
+                      if(step + i <= x2 - x1){
+                          if(scores[step + i][next] < scores[i][cur]){
+                              scores[step + i][next] = scores[i][cur];
+                              bs.x = x; bs.status = cur;
+                              pred[step + i][next] = bs;
+                          }
+                      }
+                      
                   }
-            vp[x - x1] = dots;
-            }
-
-      bool firstBarLine = true;
-      for (int x = 1; x < vpw; ++x) {
-            if (vp[x-1] < vp[x])
-                  continue;
-            if (vp[x] < th)
-                  continue;
-//            if (vp[x-1] > vp[x])
-                  {
-                  barLines.append(QLine(x + x1, y1, x + x1, y2));
-                  int xx = x + x1;
-                  if (firstBarLine) {
-                        firstBarLine = false;
-                        _staves[0].setX(xx);
-                        _staves[1].setX(xx);
-                        }
-                  else {
-                        _staves[0].setWidth(xx - _staves[0].x());
-                        _staves[1].setWidth(xx - _staves[1].x());
-                        }
+                  else{
+                      for(int next = 0; next <= 1; ++next){
+                          int step = 1;
+                          if(step + i <= x2 - x1){
+                              if(scores[step + i][next] < scores[i][cur]){
+                                  scores[step + i][next] = scores[i][cur];
+                                  bs.x = x; bs.status = cur;
+                                  pred[step + i][next] = bs;
+                              }
+                          }
+                      }
                   }
-            }
-
-      searchNotes();
+              }
+          }
+          
+        //trace back
+          int state = 0;
+          for (int x = x2; x > x1; ){
+              int i = x - x1;
+              bs = pred[i][state];
+              state = bs.status;
+              x = bs.x;
+              
+              if(state){
+                  barLines.append(QLine(x, y1, x, y2));
+              }
+          }
+          
+          
+//      for (int x = x1; x < x2; ++x) {
+//            int dots = 0;
+//            for (int y = y1; y < y2; ++y) {
+//                  if (_page->dot(x, y))
+//                        ++dots;
+//                  }
+//            vp[x - x1] = dots;
+//            }
+//          
+//      
+//      
+//
+//      bool firstBarLine = true;
+//      for (int x = 1; x < vpw; ++x) {
+//            if (vp[x-1] < vp[x])
+//                  continue;
+//            if (vp[x] < th)
+//                  continue;
+////            if (vp[x-1] > vp[x])
+//                  {
+//                  barLines.append(QLine(x + x1, y1, x + x1, y2));
+//                  int xx = x + x1;
+//                  if (firstBarLine) {
+//                        firstBarLine = false;
+//                        _staves[0].setX(xx);
+//                        _staves[1].setX(xx);
+//                        }
+//                  else {
+//                        _staves[0].setWidth(xx - _staves[0].x());
+//                        _staves[1].setWidth(xx - _staves[1].x());
+//                        }
+//                  }
+//            }
+//
+//      searchNotes();
 
       //
       // remove false positive barlines:
@@ -482,38 +583,38 @@ void OmrSystem::searchBarLines()
       //      are detected as two barlines
       //    - barlines which are really note stems
       //
-      QList<QLine> nbl;
-      double x = -10000.0;
-      double spatium = _page->spatium();
-      int nbar = 0;
-//      int i = 0;
-      int n = barLines.size();
-      for (int i = 0; i < n; ++i) {
-          
-          //if(nbar >= 2) break;//liang debug
-          
-            const QLine& l = barLines[i];
-            int nx = l.x1();
-            if ((nx - x) > spatium) {
-                  //
-                  // check for start repeat:
-                  //
-                  if ((nbar == 1)
-                     && ((nx-x)/spatium < 8.0)   // at begin of system?
-//                     && (i < (n-1))
-//                     && ((barLines[i+1].x1() - x) < spatium)    // double bar line?
-                                                 // missing: check fo note heads
-                                                 // up to here
-                     ) {
-                        x = nx;
-                        continue;
-                        }
-                  nbl.append(l);
-                  x = nx;
-                  ++nbar;
-                  }
-            }
-      barLines = nbl;
+//      QList<QLine> nbl;
+//      double x = -10000.0;
+//      double spatium = _page->spatium();
+//      int nbar = 0;
+////      int i = 0;
+//      int n = barLines.size();
+//      for (int i = 0; i < n; ++i) {
+//          
+//          //if(nbar >= 2) break;//liang debug
+//          
+//            const QLine& l = barLines[i];
+//            int nx = l.x1();
+//            if ((nx - x) > spatium) {
+//                  //
+//                  // check for start repeat:
+//                  //
+//                  if ((nbar == 1)
+//                     && ((nx-x)/spatium < 8.0)   // at begin of system?
+////                     && (i < (n-1))
+////                     && ((barLines[i+1].x1() - x) < spatium)    // double bar line?
+//                                                 // missing: check fo note heads
+//                                                 // up to here
+//                     ) {
+//                        x = nx;
+//                        continue;
+//                        }
+//                  nbl.append(l);
+//                  x = nx;
+//                  ++nbar;
+//                  }
+//            }
+//      barLines = nbl;
       }
 
 //---------------------------------------------------------

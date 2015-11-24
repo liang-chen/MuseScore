@@ -232,7 +232,6 @@ void OmrView::paintEvent(QPaintEvent* event)
                   if (_showBarlines) {
                         p.setPen(QPen(Qt::blue, 3.0));
                         foreach(const QLineF& l, system.barLines)
-                      
                             for(int w = 0; w < 10; w++)
                               p.drawLine(l.x1()+w, l.y1(), l.x2()+w, l.y2() ); //add width to barline
                         }
