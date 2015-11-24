@@ -148,7 +148,7 @@ void OmrPage::readBarLines(int pageNo)
                         OmrStaff& staff = system->staves()[ss];
                         QList<OmrChord> chords;
                         int nx   = 0;
-                        int nsym = -1;
+                        SymId nsym = SymId::noSym;
                         OmrChord chord;
                         foreach(OmrNote* n, staff.notes()) {
                               int x = n->x();
@@ -157,10 +157,10 @@ void OmrPage::readBarLines(int pageNo)
                               if (x >= m.x1() && x < m.x2()) {
                                     if (qAbs(x - nx) > int(_spatium/2) || (nsym != n->sym)) {
                                           if (!chord.notes.isEmpty()) {
-                                                int sym = chord.notes.front()->sym;
-                                                if (sym == (int)NoteHead::Type::HEAD_QUARTER)
+                                                SymId sym = chord.notes.front()->sym;
+                                              if (sym == SymId::noteheadBlack)
                                                     chord.duration.setType(TDuration::DurationType::V_QUARTER);
-                                                else if (sym == (int)NoteHead::Type::HEAD_HALF)
+                                                else if (sym == SymId::noteheadHalf)
                                                     chord.duration.setType(TDuration::DurationType::V_HALF);
                                                 chords.append(chord);
                                                 chord.notes.clear();
@@ -172,10 +172,10 @@ void OmrPage::readBarLines(int pageNo)
                                     }
                               }
                         if (!chord.notes.isEmpty()) {
-                              int sym = chord.notes.front()->sym;
-                              if (sym == (int)NoteHead::Type::HEAD_QUARTER)
+                              SymId sym = chord.notes.front()->sym;
+                              if (sym == SymId::noteheadBlack)
                                   chord.duration.setType(TDuration::DurationType::V_QUARTER);
-                              else if (sym == (int)NoteHead::Type::HEAD_HALF)
+                              else if (sym == SymId::noteheadHalf)
                                   chord.duration.setType(TDuration::DurationType::V_HALF);
                               chords.append(chord);
                               }
