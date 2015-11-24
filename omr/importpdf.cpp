@@ -230,17 +230,17 @@ Score::FileError importPdf(Score* score, const QString& path)
       qreal sp = omr->spatiumMM();
       if (sp == 0.0)
             sp = 1.5;
-      score->setSpatium(sp * MScore::DPMM);
+      score->setSpatium(sp * DPMM);
       score->style()->set(StyleIdx::lastSystemFillLimit, 0.0);
           score->style()->set(StyleIdx::staffLowerBorder, 0.0);
           score->style()->set(StyleIdx::measureSpacing, 1.0);
 
       PageFormat pF;
       pF.copy(*score->pageFormat());
-      pF.setEvenLeftMargin(5.0 * MScore::DPMM / MScore::DPI);
+      pF.setEvenLeftMargin(5.0 * DPMM / DPI);
       pF.setEvenTopMargin(0);
       pF.setEvenBottomMargin(0);
-      pF.setOddLeftMargin(5.0 * MScore::DPMM / MScore::DPI);
+      pF.setOddLeftMargin(5.0 * DPMM / DPI);
       pF.setOddTopMargin(0);
       pF.setOddBottomMargin(0);
       score->setPageFormat(pF);
