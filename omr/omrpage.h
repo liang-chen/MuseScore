@@ -176,6 +176,7 @@ class OmrSystem {
       QList<QLine> barLines;
 
       void searchBarLines();
+      float searchBarLinesvar(int n_staff);
       void searchNotes();
       };
 
@@ -232,6 +233,8 @@ class OmrPage {
       double systemDistance() const;
       void readHeader(Score* score);
       void readBarLines(int);
+      float searchBarLines(int start_staff, int end_staff);
+    void identifySystems();
 
       const QList<OmrSystem>& systems() const { return _systems; }
       QList<OmrSystem>& systems() { return _systems; }

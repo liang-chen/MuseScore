@@ -170,51 +170,62 @@ bool Omr::readPdf()
 //---------------------------------------------------------
 
 void Omr::process()
-      {
-      double sp = 0;
-      double w  = 0;
-
-      int pages = 0;
-      int n = _pages.size();
-      for (int i = 0; i < n; ++i) {
+    {
+        
+        double sp = 0;
+        double w  = 0;
+        
+        int pages = 0;
+        int n = _pages.size();
+        
+        
+        
+        for (int i = 0; i < n; ++i) {
             _pages[i]->read();
-            if (_pages[i]->systems().size() > 0) {
-                  sp += _pages[i]->spatium();
-                  ++pages;
-                  }
+//            if (_pages[i]->systems().size() > 0) {
+//                sp += _pages[i]->spatium();
+//                ++pages;
+//            }
+            sp += _pages[i]->spatium();
+            ++pages;
             w  += _pages[i]->width();
-            }
-      _spatium = sp / pages;
-      w       /= n;
-      _dpmm    = w / 210.0;            // PaperSize A4
-
-// printf("*** spatium: %f mm  dpmm: %f\n", spatiumMM(), _dpmm);
-
-      quartheadPattern  = new Pattern(_score, SymId::noteheadBlack,  _spatium);
-      halfheadPattern   = new Pattern(_score, SymId::noteheadHalf,  _spatium);
-      sharpPattern      = new Pattern(_score, SymId::accidentalSharp, _spatium);
-      flatPattern       = new Pattern(_score, SymId::accidentalFlat, _spatium);
-      naturalPattern    = new Pattern(_score, SymId::accidentalNatural,_spatium);
-      trebleclefPattern = new Pattern(_score, SymId::gClef,_spatium);
-      bassclefPattern   = new Pattern(_score, SymId::fClef,_spatium);
-          timesigPattern[0] = new Pattern(_score, SymId::timeSig0, _spatium);
-          timesigPattern[1] = new Pattern(_score, SymId::timeSig0, _spatium);
-          timesigPattern[2] = new Pattern(_score, SymId::timeSig0, _spatium);
-          timesigPattern[3] = new Pattern(_score, SymId::timeSig0, _spatium);
-          timesigPattern[4] = new Pattern(_score, SymId::timeSig0, _spatium);
-          timesigPattern[5] = new Pattern(_score, SymId::timeSig0, _spatium);
-          timesigPattern[6] = new Pattern(_score, SymId::timeSig0, _spatium);
-          timesigPattern[7] = new Pattern(_score, SymId::timeSig0, _spatium);
-          timesigPattern[8] = new Pattern(_score, SymId::timeSig0, _spatium);
-          timesigPattern[9] = new Pattern(_score, SymId::timeSig0, _spatium);
-
-      for (int i = 0; i < n; ++i) {
+        }
+        _spatium = sp / pages;
+        w       /= n;
+        _dpmm    = w / 210.0;            // PaperSize A4
+        
+        // printf("*** spatium: %f mm  dpmm: %f\n", spatiumMM(), _dpmm);
+        quartheadPattern  = new Pattern(_score, SymId::noteheadBlack,  _spatium);
+        halfheadPattern   = new Pattern(_score, SymId::noteheadHalf,  _spatium);
+        sharpPattern      = new Pattern(_score, SymId::accidentalSharp, _spatium);
+        flatPattern       = new Pattern(_score, SymId::accidentalFlat, _spatium);
+        naturalPattern    = new Pattern(_score, SymId::accidentalNatural,_spatium);
+        trebleclefPattern = new Pattern(_score, SymId::gClef,_spatium);
+        bassclefPattern   = new Pattern(_score, SymId::fClef,_spatium);
+        timesigPattern[0] = new Pattern(_score, SymId::timeSig0, _spatium);
+        timesigPattern[1] = new Pattern(_score, SymId::timeSig0, _spatium);
+        timesigPattern[2] = new Pattern(_score, SymId::timeSig0, _spatium);
+        timesigPattern[3] = new Pattern(_score, SymId::timeSig0, _spatium);
+        timesigPattern[4] = new Pattern(_score, SymId::timeSig0, _spatium);
+        timesigPattern[5] = new Pattern(_score, SymId::timeSig0, _spatium);
+        timesigPattern[6] = new Pattern(_score, SymId::timeSig0, _spatium);
+        timesigPattern[7] = new Pattern(_score, SymId::timeSig0, _spatium);
+        timesigPattern[8] = new Pattern(_score, SymId::timeSig0, _spatium);
+        timesigPattern[9] = new Pattern(_score, SymId::timeSig0, _spatium);
+        
+        
+        for (int i = 0; i < n; ++i) {
+            _pages[i]->identifySystems();
+        }
+        
+        for (int i = 0; i < n; ++i) {
             OmrPage* page = _pages[i];
             if (!page->systems().isEmpty()) {
-                  page->readBarLines(i);
-                  }
+                page->readBarLines(i);
+                break;//only read the first page, temporarily added by Liang
             }
-      }
+        }
+    }
 
 //---------------------------------------------------------
 //   spatiumMM

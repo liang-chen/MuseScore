@@ -254,13 +254,13 @@ Score::FileError importPdf(Score* score, const QString& path)
       part->staves()->push_back(staff1);
       
       score->staves().insert(0, staff1);
-      Staff* staff2 = new Staff(score);
-      part->staves()->push_back(staff2);
-      score->staves().insert(1, staff2);
-          
+//      Staff* staff2 = new Staff(score);
+//      part->staves()->push_back(staff2);
+//      score->staves().insert(1, staff2);
+//          
       staff1->setPart(part);
-      staff2->setPart(part);
-      
+//      staff2->setPart(part);
+//      
       part->staves()->front()->setBarLineSpan(part->nstaves());
       score->insertPart(part, 0);
 
