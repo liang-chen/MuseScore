@@ -105,9 +105,9 @@ namespace Ms {
         slice();
         getStaffLines();
         //identifySystems();
-        int numStaves    = staves.size();
-        int stavesSystem = 2;
-        int systems      = numStaves / stavesSystem;
+//        int numStaves    = staves.size();
+//        int stavesSystem = 2;
+//        int systems      = numStaves / stavesSystem;
         
 //        for (int system = 0; system < systems; ++system) {
 //            OmrSystem omrSystem(this);
@@ -294,8 +294,6 @@ namespace Ms {
                     for (int i = cur_staff; i <= next_staff; ++i) {
                         omrSystem.staves().append(staves[i]);
                     }
-                    if(cur_staff == 1 && next_staff == numStaves - 1)
-                        printf("123");
                     
                     cur_score = omrSystem.searchBarLinesvar(next_staff - cur_staff + 1);
                     temp_scores[cur_staff][next_staff] = cur_score;
@@ -653,7 +651,7 @@ namespace Ms {
     void OmrSystem::searchBarLines()
     {
         OmrStaff& r1 = _staves[0];
-        OmrStaff& r2 = _staves[0];//[1];
+        OmrStaff& r2 = _staves[_staves.size() - 1];//[1];
         
         int x1  = r1.x();
         int x2  = x1 + r1.width();
@@ -672,13 +670,12 @@ namespace Ms {
         searchNotes();
         
         int note_constraints[x2-x1];
-        foreach(OmrNote* n, r1.notes()){
-            for(int x = n->x(); x <= n->x() + n->width(); ++x)
-                note_constraints[x-x1] = 1;
-        }
-        foreach(OmrNote* n, r2.notes()){
-            for(int x = n->x(); x <= n->x() + n->width(); ++x)
-                note_constraints[x-x1] = 1;
+        for(int i = 0; i < _staves.size(); i++){
+            OmrStaff& r = _staves[i];
+            foreach(OmrNote* n, r.notes()){
+                for(int x = n->x(); x <= n->x() + n->width(); ++x)
+                    note_constraints[x-x1] = 1;
+            }
         }
         
         //
@@ -863,7 +860,7 @@ namespace Ms {
         
         
         //using note constraints
-        searchNotes();
+        //searchNotes();
         
         int note_constraints[x2-x1];
         memset(note_constraints, 0, sizeof(int) * (x2-x1));
@@ -919,7 +916,7 @@ namespace Ms {
                 if(cur){
                     scores[i][cur] += vp[i];
                     int next = 0;
-                    int step = 3*_page->spatium();//constraints between adjacent barlines
+                    int step = 8*_page->spatium();//constraints between adjacent barlines
                     if(step + i <= x2 - x1){
                         if(scores[step + i][next] < scores[i][cur]){
                             scores[step + i][next] = scores[i][cur];
