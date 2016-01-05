@@ -53,6 +53,10 @@ class Omr {
       static void initUtils();
 
       void process1(int page);
+      QProgressDialog progress;
+    
+    enum ActionID { READ_PDF, INIT_PARMS, SYSTEM_IDENTIFICATION, ACTION_NUM};
+    QList<QString>ActionNames;
 
    public:
       Omr(Score*);
@@ -81,7 +85,7 @@ class Omr {
       double systemDistance() const;
       Score* score() const                 { return _score;     }
       const QString& path() const          { return _path;      }
-      void process();
+      bool actions(int ID);
 
       static Pattern* quartheadPattern;
       static Pattern* halfheadPattern;

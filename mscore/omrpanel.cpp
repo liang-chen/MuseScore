@@ -190,7 +190,7 @@ void OmrPanel::setOmrView(OmrView* v)
 void OmrPanel::processClicked()
       {
       if (omrView) {
-            omrView->omr()->process();
+            //omrView->omr()->process();
             omrView->update();
             setOmrView(omrView);    // update values
             }
