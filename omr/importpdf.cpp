@@ -51,15 +51,15 @@ class OmrState {
       int tick = 0;
 
       void importPdfPage(OmrPage* omrPage);
-      int importPdfSystem(int tick, OmrSystem* omrSystem);
-      void importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem);
+      int importPdfSystem(OmrSystem* omrSystem);
+      void importPdfMeasure(OmrMeasure* m/*, const OmrSystem* omrSystem*/);
       };
 
 //---------------------------------------------------------
 //   importPdfMeasure
 //---------------------------------------------------------
 
-void OmrState::importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem)
+void OmrState::importPdfMeasure(OmrMeasure* m/*, const OmrSystem* omrSystem*/)
       {
       Measure* measure = new Measure(score);
       measure->setTick(tick);
@@ -69,6 +69,18 @@ void OmrState::importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem)
             }
       measure->setTimesig(timesig);
       measure->setLen(timesig);
+      TDuration d(TDuration::DurationType::V_MEASURE);
+          
+    
+          Rest* rest = new Rest(score, d);
+          rest->setDuration(timesig);
+          rest->setTrack(0);
+          Segment* s = measure->getSegment(Segment::Type::ChordRest, tick);
+          s->add(rest);
+          rest = new Rest(score, d);
+          rest->setDuration(timesig);
+          rest->setTrack(4);
+          s->add(rest);
 
 //      for (int staffIdx = 0; staffIdx < omrSystem->staves().size(); ++staffIdx) {
 //            if (tick == 0) {
@@ -153,15 +165,15 @@ void OmrState::importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem)
 //   importPdfSystem
 //---------------------------------------------------------
 
-int OmrState::importPdfSystem(int tick, OmrSystem* omrSystem)
+int OmrState::importPdfSystem(OmrSystem* omrSystem)
       {
       for (int i = 0; i < omrSystem->measures().size(); ++i) {
             OmrMeasure* m = &omrSystem->measures()[i];
-            importPdfMeasure(m, omrSystem);
+            importPdfMeasure(m/*, omrSystem*/);
             }
       LayoutBreak* b = new LayoutBreak(score);
       b->setLayoutBreakType(LayoutBreak::Type::LINE);
-      //score->lastMeasure()->add(b);
+      score->lastMeasure()->add(b);
       return tick;
       }
 
@@ -179,7 +191,7 @@ void OmrState::importPdfPage(OmrPage* omrPage)
       for (int k = 0; k < n; ++k) {
             int numMeasures = 1;
             if (k < nsystems) {
-                  tick = importPdfSystem(tick, omrPage->system(k));
+                  tick = importPdfSystem(omrPage->system(k));
                   }
             else {
                   Measure* measure;
@@ -232,8 +244,8 @@ Score::FileError importPdf(Score* score, const QString& path)
             sp = 1.5;
       score->setSpatium(sp * DPMM);
       score->style()->set(StyleIdx::lastSystemFillLimit, 0.0);
-          score->style()->set(StyleIdx::staffLowerBorder, 0.0);
-          score->style()->set(StyleIdx::measureSpacing, 1.0);
+      score->style()->set(StyleIdx::staffLowerBorder, 0.0);
+      score->style()->set(StyleIdx::measureSpacing, 1.0);
 
       PageFormat pF;
       pF.copy(*score->pageFormat());
@@ -250,29 +262,39 @@ Score::FileError importPdf(Score* score, const QString& path)
       score->style()->set(StyleIdx::akkoladeDistance,    Spatium(omr->staffDistance()));
 
       Part* part   = new Part(score);
-      Staff* staff1 = new Staff(score);
-      part->staves()->push_back(staff1);
-      
-      score->staves().insert(0, staff1);
-//      Staff* staff2 = new Staff(score);
-//      part->staves()->push_back(staff2);
-//      score->staves().insert(1, staff2);
-//          
-      staff1->setPart(part);
-//      staff2->setPart(part);
-//      
-      part->staves()->front()->setBarLineSpan(part->nstaves());
-      score->insertPart(part, 0);
+          OmrPage* omrPage = omr->pages().front();
+          for (int i = 0; i < omrPage->systems().front().staves().size(); i++) {
+              Staff* staff = new Staff(score);
+              staff->setPart(part);
+              part->insertStaff(staff, -1);
+              score->staves().append(staff);
+          }
+          score->appendPart(part);
+    
+    
+//      Staff* staff1 = new Staff(score);
+//      part->staves()->push_back(staff1);
+//    
+//      score->staves().insert(0, staff1);
+////      Staff* staff2 = new Staff(score);
+////      part->staves()->push_back(staff2);
+////      score->staves().insert(1, staff2);
+////          
+//      staff1->setPart(part);
+////      staff2->setPart(part);
+////      
+//      part->staves()->front()->setBarLineSpan(part->nstaves());
+//      score->insertPart(part, 0);
 
-      //---set initial clefs
-
-      OmrPage* omrPage = omr->pages().front();
-      int staves = score->nstaves();
-      for (int i = 0; i < staves; ++i) {
-            Staff* staff = score->staff(i);
-            const OmrStaff& omrStaff = omrPage->systems().front().staves()[i];
-            //staff->setInitialClef(omrStaff.clef().type);
-            }
+//      //---set initial clefs
+//
+//
+//      int staves = score->nstaves();
+//      for (int i = 0; i < staves; ++i) {
+//            Staff* staff = score->staff(i);
+//            const OmrStaff& omrStaff = omrPage->systems().front().staves()[i];
+//            //staff->setInitialClef(omrStaff.clef().type);
+//            }
 
       OmrState state;
       state.score = score;
@@ -281,8 +303,8 @@ Score::FileError importPdf(Score* score, const QString& path)
 
       //---create bracket
 
-      score->staff(0)->setBracket(0, BracketType::BRACE);
-      score->staff(0)->setBracketSpan(0, 2);
+      //score->staff(0)->setBracket(0, BracketType::BRACE);
+      //score->staff(0)->setBracketSpan(0, 2);
 
       score->setShowOmr(true);
       omr->page(0)->readHeader(score);

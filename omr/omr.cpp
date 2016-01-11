@@ -142,7 +142,7 @@ int Omr::pagesInDocument() const
 
 bool Omr::readPdf()
       {
-          
+          QProgressDialog progress;
           //set up progress dialog
           progress.setWindowFlags(Qt::WindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint));
           progress.setWindowModality(Qt::ApplicationModal);
@@ -161,19 +161,21 @@ bool Omr::readPdf()
 #endif
       int ID;
           for(ID = 0; ID < ACTION_NUM; ID++){
-              progress.setLabelText(ActionNames.at(ID));
+              //progress.setLabelText(ActionNames.at(ID));
               bool val = actions(ID);
               if(!val || progress.wasCanceled()){
                   progress.close();
                   return false;
               }
               else{
-                  if(ID + 1 < ACTION_NUM)
+                  if(ID + 1 < ACTION_NUM){
                       progress.setLabelText(ActionNames.at(ID+1));
-                  progress.setValue(ID+1);
+                      progress.setValue(ID+1);
+                  }
                   qApp->processEvents();
               }
           }
+          progress.close();
           return true;
       }
 

@@ -53,7 +53,7 @@ class Omr {
       static void initUtils();
 
       void process1(int page);
-      QProgressDialog progress;
+      
     
     enum ActionID { READ_PDF, INIT_PARMS, SYSTEM_IDENTIFICATION, ACTION_NUM};
     QList<QString>ActionNames;

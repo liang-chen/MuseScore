@@ -234,7 +234,7 @@ class OmrPage {
       void readHeader(Score* score);
       void readBarLines(int);
       float searchBarLines(int start_staff, int end_staff);
-    void identifySystems();
+      void identifySystems();
 
       const QList<OmrSystem>& systems() const { return _systems; }
       QList<OmrSystem>& systems() { return _systems; }
