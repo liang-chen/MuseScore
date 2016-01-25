@@ -52,35 +52,33 @@ class OmrState {
 
       void importPdfPage(OmrPage* omrPage);
       int importPdfSystem(OmrSystem* omrSystem);
-      void importPdfMeasure(OmrMeasure* m/*, const OmrSystem* omrSystem*/);
+      void importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem);
       };
 
 //---------------------------------------------------------
 //   importPdfMeasure
 //---------------------------------------------------------
 
-void OmrState::importPdfMeasure(OmrMeasure* m/*, const OmrSystem* omrSystem*/)
+void OmrState::importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem)
       {
-      Measure* measure = new Measure(score);
-      measure->setTick(tick);
-      if (m->timesig()) {
-            timesig = m->timesig()->timesig;
-            score->sigmap()->add(tick, SigEvent(timesig));
-            }
-      measure->setTimesig(timesig);
-      measure->setLen(timesig);
-      TDuration d(TDuration::DurationType::V_MEASURE);
-          
-    
-          Rest* rest = new Rest(score, d);
-          rest->setDuration(timesig);
-          rest->setTrack(0);
+          Measure* measure = new Measure(score);
+          measure->setTick(tick);
+          if (m->timesig()) {
+              timesig = m->timesig()->timesig;
+              score->sigmap()->add(tick, SigEvent(timesig));
+          }
+          measure->setTimesig(timesig);
+          measure->setLen(timesig);
+          TDuration d(TDuration::DurationType::V_MEASURE);
+          Rest* rest;
           Segment* s = measure->getSegment(Segment::Type::ChordRest, tick);
-          s->add(rest);
-          rest = new Rest(score, d);
-          rest->setDuration(timesig);
-          rest->setTrack(4);
-          s->add(rest);
+          for (int staffIdx = 0; staffIdx < omrSystem->staves().size(); ++staffIdx) {
+              
+              rest = new Rest(score, d);
+              rest->setDuration(timesig);
+              rest->setTrack(staffIdx*4);
+              s->add(rest);
+          }
 
 //      for (int staffIdx = 0; staffIdx < omrSystem->staves().size(); ++staffIdx) {
 //            if (tick == 0) {
@@ -169,7 +167,7 @@ int OmrState::importPdfSystem(OmrSystem* omrSystem)
       {
       for (int i = 0; i < omrSystem->measures().size(); ++i) {
             OmrMeasure* m = &omrSystem->measures()[i];
-            importPdfMeasure(m/*, omrSystem*/);
+            importPdfMeasure(m, omrSystem);
             }
       LayoutBreak* b = new LayoutBreak(score);
       b->setLayoutBreakType(LayoutBreak::Type::LINE);

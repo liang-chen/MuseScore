@@ -332,24 +332,25 @@ namespace Ms {
                 for (int i = ss.index; i <= cur_staff; ++i) {
                     omrSystem.staves().append(staves[i]);
                 }
+                omrSystem.searchBarLinesvar(cur_staff - ss.index + 1);
                 _systems.append(omrSystem);
             }
             
             cur_staff = ss.index;
             status = ss.status;
         }
+        int systems = _systems.size();
         
-        
-//        int stavesSystem = 2;
-//        int systems      = numStaves / stavesSystem;
-//        
-//        for (int system = 0; system < systems; ++system) {
-//            OmrSystem omrSystem(this);
-//            for (int i = 0; i < stavesSystem; ++i) {
-//                omrSystem.staves().append(staves[system * stavesSystem + i]);
-//            }
-//            _systems.append(omrSystem);
-//        }
+        for (int i = 0; i < systems; ++i) {
+            OmrSystem* system = &_systems[i];
+            int n = system->barLines.size();
+            for (int k = 0; k < n-1; ++k) {
+                const QLine& l1 = system->barLines[k];
+                const QLine& l2 = system->barLines[k+1];
+                OmrMeasure m(l1.x1(), l2.x1());
+                system->measures().append(m);
+            }
+        }
     }
     
     
@@ -938,6 +939,19 @@ namespace Ms {
                         }
                     }
                 }
+            }
+        }
+        
+        //trace back
+        int state = 0;
+        for (int x = x2; x > x1; ){
+            int i = x - x1;
+            bs = pred[i][state];
+            state = bs.status;
+            x = bs.x;
+            
+            if(state){
+                barLines.append(QLine(x, y1, x, y2));
             }
         }
         

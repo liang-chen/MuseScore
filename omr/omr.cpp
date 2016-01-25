@@ -161,7 +161,7 @@ bool Omr::readPdf()
 #endif
       int ID;
           for(ID = 0; ID < ACTION_NUM; ID++){
-              //progress.setLabelText(ActionNames.at(ID));
+              progress.setLabelText(ActionNames.at(ID));
               bool val = actions(ID);
               if(!val || progress.wasCanceled()){
                   progress.close();
@@ -249,12 +249,12 @@ bool Omr::actions(int ID)
                 _pages[i]->identifySystems();
             }
             
-            for (int i = 0; i < n; ++i) {
-                OmrPage* page = _pages[i];
-                if (!page->systems().isEmpty()) {
-                    page->readBarLines(i);
-                }
-            }
+//            for (int i = 0; i < n; ++i) {
+//                OmrPage* page = _pages[i];
+//                if (!page->systems().isEmpty()) {
+//                    page->readBarLines(i);
+//                }
+//            }
             return true;
         }
         return false;
