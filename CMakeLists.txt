@@ -532,7 +532,7 @@ if (ZERBERUS)
 endif (ZERBERUS)
 
 if (OMR)
-      subdirs (poppler omr)
+      subdirs (omr thirdparty/poppler)
 endif (OMR)
 
 if (OSC)
@@ -557,12 +557,12 @@ include_directories(
    ${LAME_INCLUDE_DIR}
 #   ${FREETYPE_INCLUDE_DIRS}
    ${PROJECT_SOURCE_DIR}/thirdparty/freetype/include
-   ${PROJECT_SOURCE_DIR}/poppler
+#   ${PROJECT_SOURCE_DIR}/poppler
 )
 
 if (OMR)
-   include_directories(${PROJECT_SOURCE_DIR}/poppler)
-   include_directories(${PROJECT_SOURCE_DIR}/poppler/poppler)
+   include_directories(${PROJECT_SOURCE_DIR}/thirdparty/poppler)
+   include_directories(${PROJECT_SOURCE_DIR}/thirdparty/poppler/poppler)
 endif (OMR)
 
 ##

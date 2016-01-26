@@ -19,13 +19,13 @@
 //=============================================================================
 
 #include "pdf.h"
-#include "poppler/PDFDoc.h"
-#include "poppler/goo/GooString.h"
-#include "poppler/OutputDev.h"
-#include "poppler/GlobalParams.h"
-#include "poppler/GfxState.h"
-#include "poppler/Gfx.h"
-#include "poppler/Object.h"
+#include "PDFDoc.h"
+#include "goo/GooString.h"
+#include "OutputDev.h"
+#include "GlobalParams.h"
+#include "GfxState.h"
+#include "Gfx.h"
+#include "Object.h"
 
 //------------------------------------------------------------------------
 // QImageOutputDev
