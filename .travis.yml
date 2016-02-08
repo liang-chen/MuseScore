@@ -66,17 +66,17 @@ after_script:
   - "export ARTIFACTS_PERMISSIONS=public-read"
   - "export TRAVIS_BUILD_DIR=../../vtest/html"
   - "artifacts upload"
-notifications:
-  recipients:
-    - build@musescore.org
-  email:
-    on_success: change
-    on_failure: always
-  irc:
-    channels:
-      - "irc.freenode.net#musescore"
-    on_success: change
-    on_failure: change
-  webhooks:
-    # trigger Buildtime Trend Service to parse Travis CI log
-    - https://buildtimetrend.herokuapp.com/travis
+#notifications:
+#  recipients:
+#    - build@musescore.org
+#  email:
+#    on_success: change
+#    on_failure: always
+#  irc:
+#    channels:
+#      - "irc.freenode.net#musescore"
+#    on_success: change
+#    on_failure: change
+#  webhooks:
+#    # trigger Buildtime Trend Service to parse Travis CI log
+#    - https://buildtimetrend.herokuapp.com/travis
