@@ -533,6 +533,7 @@ endif (ZERBERUS)
 
 if (OMR)
       subdirs (omr thirdparty/poppler)
+      subdirs (omr thirdparty/lcms2)
 endif (OMR)
 
 if (OSC)
@@ -563,6 +564,7 @@ include_directories(
 if (OMR)
    include_directories(${PROJECT_SOURCE_DIR}/thirdparty/poppler)
    include_directories(${PROJECT_SOURCE_DIR}/thirdparty/poppler/poppler)
+   include_directories(${PROJECT_SOURCE_DIR}/thirdparty/lcms2/include)
 endif (OMR)
 
 ##

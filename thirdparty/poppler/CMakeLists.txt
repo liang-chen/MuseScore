@@ -1,4 +1,3 @@
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty/lcms2/include)
 
 add_library(poppler STATIC
       poppler/Annot.cc
