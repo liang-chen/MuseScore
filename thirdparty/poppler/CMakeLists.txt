@@ -129,3 +129,5 @@ include_directories(
 	${PROJECT_SOURCE_DIR}/thirdparty/poppler/fofi
 	${PROJECT_SOURCE_DIR}/thirdparty/poppler/splash
       )
+
+ADD_DEPENDENCIES(poppler lcms2)
