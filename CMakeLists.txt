@@ -532,8 +532,7 @@ if (ZERBERUS)
 endif (ZERBERUS)
 
 if (OMR)
-      subdirs (omr thirdparty/poppler)
-      subdirs (omr thirdparty/lcms2)
+      subdirs (omr thirdparty/poppler thirdparty/lcms2)
 endif (OMR)
 
 if (OSC)
