@@ -152,7 +152,7 @@
 /* #undef HAVE_ZLIB_H */
 
 /* Define as const if the declaration of iconv() needs const. */
-#define ICONV_CONST 
+#define ICONV_CONST
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
@@ -208,7 +208,7 @@
 #define TEXTOUT_WORD_LIST 1
 
 /* Defines if use cms */
-#define USE_CMS 1
+//#define USE_CMS 1
 
 /* Use fixed point arithmetic in the Splash backend */
 /* #undef USE_FIXEDPOINT */
@@ -226,10 +226,10 @@
 /* #undef USE_OPENJPEG2 */
 
 /* Version number of package */
-#define VERSION "0.38.0"
+#define VERSION "0.40.0"
 
 /* Use fontconfig font configuration backend */
-#define WITH_FONTCONFIGURATION_FONTCONFIG 1
+//#define WITH_FONTCONFIGURATION_FONTCONFIG 1
 
 /* Use win32 font configuration backend */
 /* #undef WITH_FONTCONFIGURATION_WIN32 */

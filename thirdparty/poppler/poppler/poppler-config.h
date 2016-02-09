@@ -34,7 +34,7 @@
 
 /* Defines the poppler version. */
 #ifndef POPPLER_VERSION
-#define POPPLER_VERSION "0.38.0"
+#define POPPLER_VERSION "0.40.0"
 #endif
 
 /* Enable multithreading support. */
@@ -121,9 +121,9 @@
 #endif
 
 /* Defines if use cms */
-#ifndef USE_CMS
-#define USE_CMS 1
-#endif
+//#ifndef USE_CMS
+//#define USE_CMS 1
+//#endif
 
 // Also, there are preprocessor symbols in the header files
 // that are used but never defined when building poppler using configure
