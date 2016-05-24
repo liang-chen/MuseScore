@@ -26,6 +26,8 @@
 #include "libmscore/fraction.h"
 #include "libmscore/clef.h"
 #include "libmscore/xml.h"
+#include "libmscore/sym.h"
+#include "pattern.h"
 
 namespace Ms {
 
@@ -53,8 +55,8 @@ struct HLine {
 
 class OmrPattern : public QRect {
    public:
-      OmrPattern() : QRect(), sym(-1), prob(0.0) {}
-      int sym;
+    OmrPattern() : QRect(), sym(SymId::noSym), prob(0.0) {}
+      SymId sym;
       double prob;
       };
 
@@ -161,7 +163,7 @@ class OmrSystem {
       OmrPage* _page;
       QList<OmrStaff>  _staves;
       QList<OmrMeasure>_measures;
-
+    
       void searchNotes(QList<OmrNote*>*, int x1, int x2, int y, int line);
 
    public:
@@ -174,7 +176,8 @@ class OmrSystem {
 
       QList<QLine> barLines;
 
-      void searchBarLines();
+      void searchSysBarLines();
+      float searchBarLinesvar(int n_staff/*, float *bar_score_vector*/);
       void searchNotes();
       };
 
@@ -186,6 +189,7 @@ class OmrPage {
       Omr* _omr;
       QImage _image;
       double _spatium;
+      double _ratio;
 
       int cropL, cropR;       // crop values in words (32 bit) units
       int cropT, cropB;       // crop values in pixel units
@@ -202,13 +206,14 @@ class OmrPage {
       double skew(const QRect&);
       void deSkew();
       void getStaffLines();
+      void getRatio();
       double xproject2(int y);
       int xproject(const uint* p, int wl);
       void radonTransform(ulong* projection, int w, int n, const QRect&);
-      //OmrTimesig* searchTimeSig(OmrSystem* system);
-      //OmrClef searchClef(OmrSystem* system, OmrStaff* staff);
-      //void searchKeySig(OmrSystem* system, OmrStaff* staff);
-      //OmrPattern searchPattern(const std::vector<Pattern*>& pl, int y, int x1, int x2);
+      OmrTimesig* searchTimeSig(OmrSystem* system);
+      OmrClef searchClef(OmrSystem* system, OmrStaff* staff);
+      void searchKeySig(OmrSystem* system, OmrStaff* staff);
+      OmrPattern searchPattern(const std::vector<Pattern*>& pl, int y, int x1, int x2);
 
    public:
       OmrPage(Omr* _parent);
@@ -227,19 +232,23 @@ class OmrPage {
 
       const QList<QRect>& slices() const { return _slices;  }
       double spatium() const             { return _spatium; }
+      double ratio() const   {return _ratio;}
       double staffDistance() const;
       double systemDistance() const;
       void readHeader(Score* score);
-      void readBarLines(int);
-
+      void readBarLines();
+      float searchBarLines(int start_staff, int end_staff);
+      void identifySystems();
+    
       const QList<OmrSystem>& systems() const { return _systems; }
-      QList<OmrSystem>& systems() { return _systems; }
+      //QList<OmrSystem>& systems() { return _systems; }
       OmrSystem* system(int idx)  { return &_systems[idx]; }
 
 
       void write(Xml&) const;
       void read(XmlReader&);
       bool dot(int x, int y) const;
+      bool isBlack(int x, int y) const;
       };
 
 }

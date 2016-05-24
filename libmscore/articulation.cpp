@@ -501,7 +501,7 @@ void Articulation::setDirection(Direction d)
 void Articulation::reset()
       {
       if (_direction != Direction::AUTO)
-            score()->undoChangeProperty(this, P_ID::DIRECTION, int(Direction::AUTO));
+            score()->undoChangeProperty(this, P_ID::DIRECTION, Direction(Direction::AUTO));
       ArticulationAnchor a = score()->style()->articulationAnchor(int(articulationType()));
       if (_anchor != a)
             score()->undoChangeProperty(this, P_ID::ARTICULATION_ANCHOR, int(a));
@@ -547,7 +547,7 @@ bool Articulation::setProperty(P_ID propertyId, const QVariant& v)
       score()->addRefresh(canvasBoundingRect());
       switch (propertyId) {
             case P_ID::DIRECTION:
-                  setDirection(Direction(v.value<Direction>()));
+                  setDirection(v.value<Direction>());
                   break;
             case P_ID::ARTICULATION_ANCHOR:
                   anchorStyle = PropertyStyle::UNSTYLED;

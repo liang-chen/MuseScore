@@ -54,6 +54,7 @@
 #include "breath.h"
 #include "tempotext.h"
 #include "systemdivider.h"
+#include "hook.h"
 
 namespace Ms {
 
@@ -2517,176 +2518,12 @@ int LayoutContext::adjustMeasureNo(MeasureBase* m)
       }
 
 //---------------------------------------------------------
-//   getNextMeasure
+//   createBeams
+//    helper function
 //---------------------------------------------------------
 
-void Score::getNextMeasure(LayoutContext& lc)
+void Score::createBeams(Measure* measure)
       {
-      lc.prevMeasure = lc.curMeasure;
-      lc.curMeasure  = lc.nextMeasure;
-      if (!lc.curMeasure)
-            lc.nextMeasure = _showVBox ? first() : firstMeasure();
-      else
-            lc.nextMeasure = _showVBox ? lc.curMeasure->next() : lc.curMeasure->nextMeasure();
-      if (!lc.curMeasure)
-            return;
-
-      int mno = lc.adjustMeasureNo(lc.curMeasure);
-
-      if (lc.curMeasure->isMeasure() && score()->styleB(StyleIdx::createMultiMeasureRests)) {
-            Measure* m = toMeasure(lc.curMeasure);
-            Measure* nm = m;
-            Measure* lm = nm;
-            int n       = 0;
-            Fraction len;
-
-            lc.measureNo = m->no();
-
-            while (validMMRestMeasure(nm)) {
-                  MeasureBase* mb = _showVBox ? nm->next() : nm->nextMeasure();
-                  if (breakMultiMeasureRest(nm) && n)
-                        break;
-                  lc.adjustMeasureNo(nm);
-                  ++n;
-                  len += nm->len();
-                  lm = nm;
-                  nm = toMeasure(mb);
-                  if (!nm || !nm->isMeasure())
-                        break;
-
-                  }
-            if (n >= styleI(StyleIdx::minEmptyMeasures)) {
-                  createMMRest(m, lm, len);
-                  lc.curMeasure  = m->mmRest();
-                  lc.nextMeasure = _showVBox ?  lm->next() : lm->nextMeasure();
-                  }
-            else {
-                  if (m->mmRest())
-                        undo(new ChangeMMRest(m, 0));
-                  m->setMMRestCount(0);
-                  lc.measureNo = mno;
-                  }
-            }
-      else if (lc.curMeasure->isMeasure() && toMeasure(lc.curMeasure)->isMMRest()) {
-            qDebug("mmrest: no %d += %d", lc.measureNo, toMeasure(lc.curMeasure)->mmRestCount());
-            lc.measureNo += toMeasure(lc.curMeasure)->mmRestCount() - 1;
-            }
-
-      if (!lc.curMeasure->isMeasure()) {
-            lc.curMeasure->setTick(lc.tick);
-            return;
-            }
-
-      //-----------------------------------------
-      //    process one measure
-      //-----------------------------------------
-
-      Measure* measure = toMeasure(lc.curMeasure);
-      measure->moveTicks(lc.tick - measure->tick());
-      if (isMaster() && !lc.prevMeasure) {
-            lc.sig = measure->len();
-            tempomap()->clear();
-            sigmap()->clear();
-            sigmap()->add(0, SigEvent(lc.sig,  measure->timesig(), 0));
-            }
-
-      //
-      //  implement section break rest
-      //
-      if (measure->sectionBreak() && measure->pause() != 0.0)
-            setPause(measure->tick() + measure->ticks(), measure->pause());
-
-      for (int staffIdx = 0; staffIdx < score()->nstaves(); ++staffIdx) {
-            AccidentalState as;      // list of already set accidentals for this measure
-            Staff* staff = score()->staff(staffIdx);
-            as.init(staff->key(measure->tick()));
-
-            int track    = staffIdx * VOICES;
-            int endTrack = track + VOICES;
-
-            for (Segment* segment = measure->first(); segment; segment = segment->next()) {
-                  if (segment->isKeySigType()) {
-                        KeySig* ks = toKeySig(segment->element(staffIdx * VOICES));
-                        if (!ks)
-                              continue;
-                        as.init(staff->key(segment->tick()));
-                        ks->layout();
-                        }
-                  else if (segment->isChordRestType()) {
-                        Staff* staff    = score()->staff(staffIdx);
-                        qreal staffMag  = staff->mag();
-
-                        for (int t = track; t < endTrack; ++t) {
-                              ChordRest* cr = segment->cr(t);
-                              if (cr) {
-                                    measure->layoutCR0(cr, staffMag, &as);
-                                    }
-                              }
-                        layoutChords1(segment, staffIdx);
-                        }
-                  else if (segment->isType(Segment::Type::Clef | Segment::Type::TimeSig)) {
-                        Element* e = segment->element(staffIdx * VOICES);
-                        if (e)
-                              e->layout();
-                        }
-                  }
-            }
-
-      for (Segment* s = measure->first(); s; s = s->next()) {
-            if (s->isBreathType()) {
-                  qreal length = 0.0;
-                  int tick = s->tick();
-                  // find longest pause
-                  for (int i = 0, n = ntracks(); i < n; ++i) {
-                        Breath* b = toBreath(s->element(i));
-                        if (b && b->isBreath())
-                              length = qMax(length, b->pause());
-                        }
-                  if (length != 0.0)
-                        setPause(tick, length);
-                  }
-            else if (s->isTimeSigType()) {
-                  for (int staffIdx = 0; staffIdx < _staves.size(); ++staffIdx) {
-                        TimeSig* ts = toTimeSig(s->element(staffIdx * VOICES));
-                        if (ts)
-                              staff(staffIdx)->addTimeSig(ts);
-                        }
-                  }
-            else if (isMaster() && s->isChordRestType()) {
-                  for (Element* e : s->annotations()) {
-                        if (!e->isTempoText())  // layout tempotext after stretchMeasure
-                              e->layout();
-                        }
-                  qreal stretch = 0.0;
-                  for (Element* e : s->elist()) {
-                        if (!e || !e->isChordRest())
-                              continue;
-                        ChordRest* cr = toChordRest(e);
-                        for (Articulation* a : cr->articulations())
-                              stretch = qMax(a->timeStretch(), stretch);
-                        if (stretch != 0.0 && stretch != 1.0) {
-                              qreal otempo = tempomap()->tempo(cr->tick());
-                              qreal ntempo = otempo / stretch;
-                              setTempo(cr->tick(), ntempo);
-                              int etick = cr->tick() + cr->actualTicks() - 1;
-                              auto e = tempomap()->find(etick);
-                              if (e == tempomap()->end())
-                                    setTempo(etick, otempo);
-                              break;
-                              }
-                        }
-                  }
-            }
-
-      // update time signature map
-      // create event if measure len and time signature are different
-      // even if they are equivalent 4/4 vs 2/2
-
-      if (isMaster() && !measure->len().identical(lc.sig)) {
-            lc.sig = measure->len();
-            sigmap()->add(lc.tick, SigEvent(lc.sig, measure->timesig(), measure->no()));
-            }
-
       bool crossMeasure = styleB(StyleIdx::crossMeasureValues);
 
       for (int track = 0; track < ntracks(); ++track) {
@@ -2703,7 +2540,6 @@ void Score::getNextMeasure(LayoutContext& lc)
             bool checkBeats  = false;
             Fraction stretch = 1;
             QHash<int, TDuration> beatSubdivision;
-            const Segment::Type st = Segment::Type::ChordRest;
 
             // if this measure is simple meter (actually X/4),
             // then perform a prepass to determine the subdivision of each beat
@@ -2713,6 +2549,7 @@ void Score::getNextMeasure(LayoutContext& lc)
             checkBeats  = false;
             stretch     = ts ? ts->stretch() : 1;
 
+            const Segment::Type st = Segment::Type::ChordRest;
             if (ts && ts->denominator() == 4) {
                   checkBeats = true;
                   for (Segment* s = measure->first(st); s; s = s->next(st)) {
@@ -2731,8 +2568,7 @@ void Score::getNextMeasure(LayoutContext& lc)
                   ChordRest* cr = segment->cr(track);
                   if (cr == 0)
                         continue;
-
-                  cr->layoutArticulations();
+                  // cr->layoutArticulations();
                   for (Lyrics* l : cr->lyricsList()) {
                         if (l)
                               l->layout();
@@ -2846,16 +2682,209 @@ void Score::getNextMeasure(LayoutContext& lc)
             else if (a1)
                   a1->removeDeleteBeam(false);
             }
+      }
+
+//---------------------------------------------------------
+//   getNextMeasure
+//---------------------------------------------------------
+
+void Score::getNextMeasure(LayoutContext& lc)
+      {
+      lc.prevMeasure = lc.curMeasure;
+      lc.curMeasure  = lc.nextMeasure;
+      if (!lc.curMeasure)
+            lc.nextMeasure = _showVBox ? first() : firstMeasure();
+      else
+            lc.nextMeasure = _showVBox ? lc.curMeasure->next() : lc.curMeasure->nextMeasure();
+      if (!lc.curMeasure)
+            return;
+
+      int mno       = lc.adjustMeasureNo(lc.curMeasure);
+      bool lineMode = _layoutMode == LayoutMode::LINE;
+
+      if (lineMode) {
+            while (lc.curMeasure && lc.curMeasure->isVBox()) {
+                  lc.curMeasure  = lc.nextMeasure;
+                  lc.nextMeasure = lc.curMeasure->next();
+                  }
+            if (!lc.curMeasure)
+                  return;
+            }
+      else if (lc.curMeasure->isMeasure() && score()->styleB(StyleIdx::createMultiMeasureRests)) {
+            Measure* m = toMeasure(lc.curMeasure);
+            Measure* nm = m;
+            Measure* lm = nm;
+            int n       = 0;
+            Fraction len;
+
+            lc.measureNo = m->no();
+
+            while (validMMRestMeasure(nm)) {
+                  MeasureBase* mb = _showVBox ? nm->next() : nm->nextMeasure();
+                  if (breakMultiMeasureRest(nm) && n)
+                        break;
+                  lc.adjustMeasureNo(nm);
+                  ++n;
+                  len += nm->len();
+                  lm = nm;
+                  nm = toMeasure(mb);
+                  if (!nm || !nm->isMeasure())
+                        break;
+
+                  }
+            if (n >= styleI(StyleIdx::minEmptyMeasures)) {
+                  createMMRest(m, lm, len);
+                  lc.curMeasure  = m->mmRest();
+                  lc.nextMeasure = _showVBox ?  lm->next() : lm->nextMeasure();
+                  }
+            else {
+                  if (m->mmRest())
+                        undo(new ChangeMMRest(m, 0));
+                  m->setMMRestCount(0);
+                  lc.measureNo = mno;
+                  }
+            }
+      else if (lc.curMeasure->isMeasure() && toMeasure(lc.curMeasure)->isMMRest()) {
+            qDebug("mmrest: no %d += %d", lc.measureNo, toMeasure(lc.curMeasure)->mmRestCount());
+            lc.measureNo += toMeasure(lc.curMeasure)->mmRestCount() - 1;
+            }
+
+      if (!lc.curMeasure->isMeasure()) {
+            lc.curMeasure->setTick(lc.tick);
+            return;
+            }
+
+      //-----------------------------------------
+      //    process one measure
+      //-----------------------------------------
+
+      Measure* measure = toMeasure(lc.curMeasure);
+      measure->moveTicks(lc.tick - measure->tick());
+      if (isMaster() && !lc.prevMeasure) {
+            // this is the first measure of a score
+            lc.sig = measure->len();
+            tempomap()->clear();
+            sigmap()->clear();
+            sigmap()->add(0, SigEvent(lc.sig,  measure->timesig(), 0));
+            }
+
+      //
+      //  implement section break rest
+      //
+      if (measure->sectionBreak() && measure->pause() != 0.0)
+            setPause(measure->tick() + measure->ticks(), measure->pause());
+
+      //
+      // calculate accidentals and note lines,
+      // create stem and set stem direction
+      //
+      for (int staffIdx = 0; staffIdx < score()->nstaves(); ++staffIdx) {
+            AccidentalState as;      // list of already set accidentals for this measure
+            Staff* staff = Score::staff(staffIdx);
+            as.init(staff->key(measure->tick()));
+
+            for (Segment& segment : measure->segments()) {
+                  if (segment.isKeySigType()) {
+                        KeySig* ks = toKeySig(segment.element(staffIdx * VOICES));
+                        if (!ks)
+                              continue;
+                        as.init(staff->key(segment.tick()));
+                        ks->layout();
+                        }
+                  else if (segment.isChordRestType()) {
+                        int track    = staffIdx * VOICES;
+                        int endTrack = track + VOICES;
+                        for (int t = track; t < endTrack; ++t) {
+                              ChordRest* cr = segment.cr(t);
+                              if (cr) {
+                                    cr->layout0(&as);
+//                                    cr->computeUp();     // set stem direction
+//                                    cr->layoutStem1();
+                                    cr->layoutArticulations();
+                                    }
+                              }
+                        }
+                  else if (segment.isType(Segment::Type::Clef | Segment::Type::TimeSig)) {
+                        Element* e = segment.element(staffIdx * VOICES);
+                        if (e)
+                              e->layout();
+                        }
+                  }
+            }
+
+      createBeams(measure);
+
+      for (int staffIdx = 0; staffIdx < score()->nstaves(); ++staffIdx) {
+            for (Segment& segment : measure->segments()) {
+                  if (segment.isChordRestType())
+                        layoutChords1(&segment, staffIdx);
+                  }
+            }
+
+      for (Segment& segment : measure->segments()) {
+            if (segment.isBreathType()) {
+                  qreal length = 0.0;
+                  int tick = segment.tick();
+                  // find longest pause
+                  for (int i = 0, n = ntracks(); i < n; ++i) {
+                        Breath* b = toBreath(segment.element(i));
+                        if (b && b->isBreath())
+                              length = qMax(length, b->pause());
+                        }
+                  if (length != 0.0)
+                        setPause(tick, length);
+                  }
+            else if (segment.isTimeSigType()) {
+                  for (int staffIdx = 0; staffIdx < _staves.size(); ++staffIdx) {
+                        TimeSig* ts = toTimeSig(segment.element(staffIdx * VOICES));
+                        if (ts)
+                              staff(staffIdx)->addTimeSig(ts);
+                        }
+                  }
+            else if (isMaster() && segment.isChordRestType()) {
+                  for (Element* e : segment.annotations()) {
+                        if (!e->isTempoText())  // layout tempotext after stretchMeasure
+                              e->layout();
+                        }
+                  qreal stretch = 0.0;
+                  for (Element* e : segment.elist()) {
+                        if (!e || !e->isChordRest())
+                              continue;
+                        ChordRest* cr = toChordRest(e);
+                        for (Articulation* a : cr->articulations())
+                              stretch = qMax(a->timeStretch(), stretch);
+                        if (stretch != 0.0 && stretch != 1.0) {
+                              qreal otempo = tempomap()->tempo(cr->tick());
+                              qreal ntempo = otempo / stretch;
+                              setTempo(cr->tick(), ntempo);
+                              int etick = cr->tick() + cr->actualTicks() - 1;
+                              auto e = tempomap()->find(etick);
+                              if (e == tempomap()->end())
+                                    setTempo(etick, otempo);
+                              break;
+                              }
+                        }
+                  }
+            }
+
+      // update time signature map
+      // create event if measure len and time signature are different
+      // even if they are equivalent 4/4 vs 2/2
+
+      if (isMaster() && !measure->len().identical(lc.sig)) {
+            lc.sig = measure->len();
+            sigmap()->add(lc.tick, SigEvent(lc.sig, measure->timesig(), measure->no()));
+            }
 
       for (Segment& s : measure->segments()) {
             // DEBUG: relayout grace notes as beaming/flags may have changed
             if (s.isChordRestType()) {
                   for (Element* e : s.elist()) {
                         if (e && e->isChord()) {
-                              Chord* c = toChord(e);
-                              c->layout();
-                              if (c->tremolo())            // debug
-                                    c->tremolo()->layout();
+                              Chord* chord = toChord(e);
+                              chord->layout();
+                              if (chord->tremolo())            // debug
+                                    chord->tremolo()->layout();
                               }
                         }
                   }
@@ -2863,6 +2892,7 @@ void Score::getNextMeasure(LayoutContext& lc)
                   continue;
             s.createShapes();
             }
+
       lc.tick += measure->ticks();
       }
 
@@ -2930,9 +2960,10 @@ System* Score::collectSystem(LayoutContext& lc)
 
       qreal minMeasureWidth = styleP(StyleIdx::minMeasureWidth);
       qreal minWidth        = system->leftMargin();
-      Measure* firstMeasure = 0;
+      bool firstMeasure     = true;
       qreal measureSpacing  = styleD(StyleIdx::measureSpacing);
       qreal systemWidth     = pageFormat()->printableWidth() * DPI;
+      bool lineMode         = _layoutMode == LayoutMode::LINE;
 
       while (lc.curMeasure) {    // collect measure for system
             System* oldSystem = lc.curMeasure->system();
@@ -2947,8 +2978,8 @@ System* Score::collectSystem(LayoutContext& lc)
             else if (lc.curMeasure->isMeasure()) {
                   Measure* m = toMeasure(lc.curMeasure);
 
-                  if (!firstMeasure) {
-                        firstMeasure = m;
+                  if (firstMeasure) {
+                        firstMeasure = false;
                         addSystemHeader(m, lc.firstSystem);
                         ww = computeMinWidth(m->first(), true);
                         }
@@ -2980,7 +3011,7 @@ System* Score::collectSystem(LayoutContext& lc)
             // check if lc.curMeasure fits, remove if not
             // collect at least one measure
 
-            if ((system->measures().size() > 1) && (minWidth + ww > systemWidth)) {
+            if (!lineMode && (system->measures().size() > 1) && (minWidth + ww > systemWidth)) {
                   system->measures().pop_back();
                   lc.curMeasure->setSystem(oldSystem);
                   break;
@@ -3023,8 +3054,9 @@ System* Score::collectSystem(LayoutContext& lc)
             minWidth += ww;
 
             Element::Type nt = lc.curMeasure ? lc.curMeasure->type() : Element::Type::INVALID;
-            if (pbreak || nt == Element::Type::VBOX || nt == Element::Type::TBOX || nt == Element::Type::FBOX
-               || (minWidth + minMeasureWidth > systemWidth)) {
+            if (!lineMode
+               && (pbreak || nt == Element::Type::VBOX || nt == Element::Type::TBOX || nt == Element::Type::FBOX
+                 || (minWidth + minMeasureWidth > systemWidth))) {
                   break;      // break system
                   }
 
@@ -3046,113 +3078,114 @@ System* Score::collectSystem(LayoutContext& lc)
       if (lc.curMeasure == 0 && ((minWidth / systemWidth) <= styleD(StyleIdx::lastSystemFillLimit)))
             raggedRight = true;
 
-      //-------------------------------------------------------
-      //    add cautionary time/key signatures if needed
-      //-------------------------------------------------------
+      if (!lineMode) {
+            //-------------------------------------------------------
+            //    add cautionary time/key signatures if needed
+            //-------------------------------------------------------
 
-      Measure* m = system->lastMeasure();
-      Measure* nm = m ? m->nextMeasure() : 0;
-      Segment* s;
-
-      if (m && nm) {
-            m->setHasSystemTrailer(false);
-            int tick = m->endTick();
-            bool isFinalMeasureOfSection = m->isFinalMeasureOfSection();
-
-            // locate a time sig. in the next measure and, if found,
-            // check if it has court. sig. turned off
-            TimeSig* ts;
-            Segment* tss         = nm->findSegment(Segment::Type::TimeSig, tick);
-            bool showCourtesySig = tss && styleB(StyleIdx::genCourtesyTimesig) && !(isFinalMeasureOfSection && _layoutMode != LayoutMode::FLOAT);
-
-            if (showCourtesySig) {
-                  ts = toTimeSig(tss->element(0));
-                  if (ts && !ts->showCourtesySig())
-                        showCourtesySig = false;     // this key change has court. sig turned off
-                  }
-            if (showCourtesySig) {
-                  // if due, create a new courtesy time signature for each staff
-                  m->setHasSystemTrailer(true);
-                  s  = m->undoGetSegment(Segment::Type::TimeSigAnnounce, tick);
-                  int nstaves = Score::nstaves();
-                  for (int track = 0; track < nstaves * VOICES; track += VOICES) {
-                        TimeSig* nts = toTimeSig(tss->element(track));
-                        if (!nts)
-                              continue;
-                        ts = toTimeSig(s->element(track));
-                        if (!ts) {
-                              ts = new TimeSig(this);
-                              ts->setTrack(track);
-                              ts->setGenerated(true);
-                              ts->setParent(s);
-                              undoAddElement(ts);
-                              ts->layout();
-                              s->createShape(track / VOICES);
-                              }
-                        ts->setFrom(nts);
-                        }
-                  }
-            else {
-                  // remove any existing time signatures
-                  Segment* tss = m->findSegment(Segment::Type::TimeSigAnnounce, tick);
-                  if (tss)
-                        undoRemoveElement(tss);
-                  }
-
-            // courtesy key signatures
-            int n     = _staves.size();
-            bool show = m->hasCourtesyKeySig();
+            Measure* m = system->lastMeasure();
+            Measure* nm = m ? m->nextMeasure() : 0;
             Segment* s;
-            if (show)
-                  s = m->undoGetSegment(Segment::Type::KeySigAnnounce, tick);
-            else
-                  s = m->findSegment(Segment::Type::KeySigAnnounce, tick);
 
-            Segment* clefSegment = m->findSegment(Segment::Type::Clef, tick);
+            if (m && nm) {
+                  m->setHasSystemTrailer(false);
+                  int tick = m->endTick();
+                  bool isFinalMeasureOfSection = m->isFinalMeasureOfSection();
 
-            for (int staffIdx = 0; staffIdx < n; ++staffIdx) {
-                  int track    = staffIdx * VOICES;
-                  Staff* staff = _staves[staffIdx];
+                  // locate a time sig. in the next measure and, if found,
+                  // check if it has court. sig. turned off
+                  TimeSig* ts;
+                  Segment* tss         = nm->findSegment(Segment::Type::TimeSig, tick);
+                  bool showCourtesySig = tss && styleB(StyleIdx::genCourtesyTimesig) && !(isFinalMeasureOfSection && _layoutMode != LayoutMode::FLOAT);
 
-                  if (show) {
+                  if (showCourtesySig) {
+                        ts = toTimeSig(tss->element(0));
+                        if (ts && !ts->showCourtesySig())
+                              showCourtesySig = false;     // this key change has court. sig turned off
+                        }
+                  if (showCourtesySig) {
+                        // if due, create a new courtesy time signature for each staff
                         m->setHasSystemTrailer(true);
-                        KeySig* ks = toKeySig(s->element(track));
-                        KeySigEvent key2 = staff->keySigEvent(tick);
-
-                        if (!ks) {
-                              ks = new KeySig(this);
-                              ks->setKeySigEvent(key2);
-                              ks->setTrack(track);
-                              ks->setGenerated(true);
-                              ks->setParent(s);
-                              undoAddElement(ks);
+                        s  = m->undoGetSegment(Segment::Type::TimeSigAnnounce, tick);
+                        int nstaves = Score::nstaves();
+                        for (int track = 0; track < nstaves * VOICES; track += VOICES) {
+                              TimeSig* nts = toTimeSig(tss->element(track));
+                              if (!nts)
+                                    continue;
+                              ts = toTimeSig(s->element(track));
+                              if (!ts) {
+                                    ts = new TimeSig(this);
+                                    ts->setTrack(track);
+                                    ts->setGenerated(true);
+                                    ts->setParent(s);
+                                    undoAddElement(ts);
+                                    ts->layout();
+                                    s->createShape(track / VOICES);
+                                    }
+                              ts->setFrom(nts);
                               }
-                        else if (!(ks->keySigEvent() == key2)) {
-                              undo(new ChangeKeySig(ks, key2, ks->showCourtesy()));
-                              }
-                        ks->layout();
-                        s->createShape(track / VOICES);
                         }
                   else {
-                        // remove any existent courtesy key signature
-                        if (s && s->element(track))
-                              undoRemoveElement(s->element(track));
+                        // remove any existing time signatures
+                        Segment* tss = m->findSegment(Segment::Type::TimeSigAnnounce, tick);
+                        if (tss)
+                              undoRemoveElement(tss);
                         }
-                  if (clefSegment) {
-                        Clef* clef = toClef(clefSegment->element(track));
-                        if (clef && (!score()->styleB(StyleIdx::genCourtesyClef)
-                           || m->repeatEnd() || m->isFinalMeasureOfSection()
-                           || !clef->showCourtesy())) {
-                              clef->clear();          // make invisible
+
+                  // courtesy key signatures
+                  int n     = _staves.size();
+                  bool show = m->hasCourtesyKeySig();
+                  Segment* s;
+                  if (show)
+                        s = m->undoGetSegment(Segment::Type::KeySigAnnounce, tick);
+                  else
+                        s = m->findSegment(Segment::Type::KeySigAnnounce, tick);
+
+                  Segment* clefSegment = m->findSegment(Segment::Type::Clef, tick);
+
+                  for (int staffIdx = 0; staffIdx < n; ++staffIdx) {
+                        int track    = staffIdx * VOICES;
+                        Staff* staff = _staves[staffIdx];
+
+                        if (show) {
+                              m->setHasSystemTrailer(true);
+                              KeySig* ks = toKeySig(s->element(track));
+                              KeySigEvent key2 = staff->keySigEvent(tick);
+
+                              if (!ks) {
+                                    ks = new KeySig(this);
+                                    ks->setKeySigEvent(key2);
+                                    ks->setTrack(track);
+                                    ks->setGenerated(true);
+                                    ks->setParent(s);
+                                    undoAddElement(ks);
+                                    }
+                              else if (!(ks->keySigEvent() == key2)) {
+                                    undo(new ChangeKeySig(ks, key2, ks->showCourtesy()));
+                                    }
+                              ks->layout();
+                              s->createShape(track / VOICES);
+                              }
+                        else {
+                              // remove any existent courtesy key signature
+                              if (s && s->element(track))
+                                    undoRemoveElement(s->element(track));
+                              }
+                        if (clefSegment) {
+                              Clef* clef = toClef(clefSegment->element(track));
+                              if (clef && (!score()->styleB(StyleIdx::genCourtesyClef)
+                                 || m->repeatEnd() || m->isFinalMeasureOfSection()
+                                 || !clef->showCourtesy())) {
+                                    clef->clear();          // make invisible
+                                    }
                               }
                         }
+                  //HACK to layout cautionary elements:
+                  if (m->hasSystemTrailer())
+                        computeMinWidth(m->first(), false);
                   }
-            //HACK to layout cautionary elements:
-            if (m->hasSystemTrailer())
-                  computeMinWidth(m->first(), false);
+            system->setWidth(systemWidth);
             }
-
-      system->setWidth(systemWidth);
 
       minWidth           = system->leftMargin();
       qreal totalWeight  = 0.0;
@@ -3171,7 +3204,7 @@ System* Score::collectSystem(LayoutContext& lc)
 
       // stretch incomplete row
       qreal rest;
-      if (MScore::layoutDebug)
+      if (lineMode || MScore::layoutDebug)
             rest = 0;
       else {
             rest = systemWidth - minWidth;
@@ -3193,10 +3226,16 @@ System* Score::collectSystem(LayoutContext& lc)
                   qreal stretch = m->userStretch();
                   if (stretch < 1.0)
                         stretch = 1.0;
-                  ww  = m->width() + rest * m->ticks() * stretch;
                   for (MStaff* ms : m->mstaves())
                         ms->lines->layout();
-                  m->stretchMeasure(ww);
+                  if (!lineMode) {
+                        ww  = m->width() + rest * m->ticks() * stretch;
+                        m->stretchMeasure(ww);
+                        }
+                  else {
+                        m->stretchMeasure(m->width());
+                        ww = m->width();
+                        }
                   }
             else if (mb->isHBox()) {
                   mb->setPos(pos);
@@ -3208,6 +3247,8 @@ System* Score::collectSystem(LayoutContext& lc)
                   }
             pos.rx() += ww;
             }
+      if (lineMode)
+            system->setWidth(pos.x());
 
       // layout beams and update the segment shape
       for (MeasureBase* mb : system->measures()) {
@@ -3239,69 +3280,6 @@ System* Score::collectSystem(LayoutContext& lc)
       lc.systemChanged      = lc.systemOldMeasure != (system->measures().empty() ? 0 : system->measures().back());
       return system;
       }
-
-#if 0
-//---------------------------------------------------------
-//   relayoutPage
-//---------------------------------------------------------
-
-static void relayoutPage(Page* page)
-      {
-      qreal y         = page->tm();
-      qreal ey        = page->height() - page->bm();
-      Score* score    = page->score();
-      const qreal slb = score->styleP(StyleIdx::staffLowerBorder);
-      const qreal sub = score->styleP(StyleIdx::staffUpperBorder);
-
-      QList<System*>& sl = page->systems();
-
-      auto li = sl.begin();
-
-      System* s1 = 0;
-      System* s2 = *li++;
-
-      for (;;) {
-            //
-            // calculate distance to previous system
-            //
-            qreal distance;
-            if (s1)
-                  distance = s1->minDistance(s2);
-            else {
-                  // this is the first system on page
-                  VBox* vbox = s2->vbox();
-                  distance = vbox ? vbox->topGap() : sub;
-                  distance = qMax(distance, -s2->minTop());
-                  }
-            y += distance;
-            s2->setPos(page->lm(), y);
-            y += s2->height();
-
-            //
-            //  check for page break or if next system will fit on page
-            //
-            if (li != sl.end()) {
-                  System* s3 = *li++;
-
-                  qreal dist = s2->minDistance(s3) + s3->height();
-                  VBox* vbox = s3->vbox();
-                  if (vbox)
-                        dist += vbox->bottomGap();
-                  else
-                        dist += qMax(s3->minBottom(), slb);
-                  s1 = s2;    // current system becomes previous
-                  s2 = s3;    // next system becomes current
-                  }
-            else {
-                  VBox* vbox = s2->vbox();
-                  qreal dist = vbox ? vbox->bottomGap() : qMax(s2->minBottom(), slb);
-                  layoutPage(page, ey - (y + dist));
-                  break;
-                  }
-            }
-      page->rebuildBspTree();
-      }
-#endif
 
 //---------------------------------------------------------
 //   collectPage
@@ -3436,9 +3414,6 @@ bool Score::collectPage(LayoutContext& lc)
                   }
             }
 
-      for (Staff* staff : _staves)
-            staff->pitchOffsets().clear();
-
       if (etick != -1) {
             for (auto s : _spanner.map()) {
                   Spanner* sp = s.second;
@@ -3474,13 +3449,6 @@ bool Score::collectPage(LayoutContext& lc)
 
 void Score::doLayout()
       {
-#if 0
-      static int mops= 0;
-
-      ++mops;
-      if (mops == 1)
-            abort();
-#endif
       qDebug();
 
       if (_staves.empty() || first() == 0) {
@@ -3510,15 +3478,12 @@ void Score::doLayout()
       getNextMeasure(lc);
       getNextMeasure(lc);
 
+      collectSystem(lc);
+      while (collectPage(lc))
+            ;
       if (_layoutMode == LayoutMode::LINE) {
-            while (lc.curMeasure->isVBox())
-                  getNextMeasure(lc);
-            layoutLinear(lc);
-            }
-      else {
-            collectSystem(lc);
-            while (collectPage(lc))
-                  ;
+            Page* page = _pages[0];
+            page->setWidth(page->system(0)->width());
             }
 
       // TODO: remove remaining systems from lc.systemList
@@ -3548,6 +3513,7 @@ void Score::doLayoutRange(int stick, int etick)
       qDebug(" %d-%d  systems %d", stick, etick, _systems.size());
       LayoutContext lc;
 
+#if 0
       if (_layoutMode == LayoutMode::LINE) {
             _systems.swap(lc.systemList);
             getNextMeasure(lc);
@@ -3555,6 +3521,7 @@ void Score::doLayoutRange(int stick, int etick)
             layoutLinear(lc);
             return;
             }
+#endif
 
       lc.rangeLayout = true;
       lc.rangeDone   = false;

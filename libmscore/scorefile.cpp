@@ -477,8 +477,10 @@ void Score::saveCompressedFile(QFileInfo& info, bool onlySelection)
 
 QImage Score::createThumbnail()
       {
-      LayoutMode layoutMode = _layoutMode;
-      switchToPageMode();
+      LayoutMode mode = layoutMode();
+      setLayoutMode(LayoutMode::PAGE);
+      doLayout();
+
       Page* page = pages().at(0);
       QRectF fr  = page->abbox();
       qreal mag  = 256.0 / qMax(fr.width(), fr.height());
@@ -495,8 +497,10 @@ QImage Score::createThumbnail()
       p.scale(mag, mag);
       print(&p, 0);
       p.end();
-      if (layoutMode != _layoutMode)
-            endCmd(true);       // rollback
+      if (layoutMode() != mode) {
+            setLayoutMode(mode);
+            doLayout();
+            }
       return pm;
       }
 
@@ -674,7 +678,7 @@ void Score::saveFile(QIODevice* f, bool msczFormat, bool onlySelection)
             xml.tag("programRevision", revision);
             }
       else {
-            xml.stag("museScore version=\"2.00\"");
+            xml.stag("museScore version=\"2.06\"");
             }
       write(xml, onlySelection);
       xml.etag();
@@ -905,7 +909,7 @@ Score::FileError MasterScore::read1(XmlReader& e, bool ignoreVersionError)
                         QString message;
                         if (mscVersion() > MSCVERSION)
                               return FileError::FILE_TOO_NEW;
-                        if (mscVersion() < 200)
+                        if (mscVersion() < 206)
                               return FileError::FILE_TOO_OLD;
                         }
 
@@ -974,7 +978,7 @@ bool Score::read(XmlReader& e)
                   _mscoreRevision = e.readInt();
             else if (tag == "Omr") {
 #ifdef OMR
-                  masterScore()->setOMR(new Omr(this));
+                  masterScore()->setOmr(new Omr(this));
                   masterScore()->omr()->read(e);
 #else
                   e.skipCurrentElement();

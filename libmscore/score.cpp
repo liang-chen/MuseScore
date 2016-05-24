@@ -434,9 +434,11 @@ void Score::fixTicks()
                               }
                         }
                   else if (isMaster() && (s->segmentType() == Segment::Type::ChordRest)) {
-                        foreach (Element* e, s->annotations()) {
+                        for (Element* e : s->annotations()) {
                               if (e->type() == Element::Type::TEMPO_TEXT) {
-                                    const TempoText* tt = static_cast<const TempoText*>(e);
+                                    TempoText* tt = toTempoText(e);
+                                    if (tt->isRelative())
+                                          tt->updateRelative();
                                     setTempo(tt->segment(), tt->tempo());
                                     }
                               }
@@ -1215,7 +1217,9 @@ void Score::addElement(Element* element)
 
             case Element::Type::TEMPO_TEXT:
                   {
-                  TempoText* tt = static_cast<TempoText*>(element);
+                  TempoText* tt = toTempoText(element);
+                  if (tt->isRelative())
+                        tt->updateRelative();
                   setTempo(tt->segment(), tt->tempo());
                   }
                   break;
@@ -3935,28 +3939,14 @@ void Score::cropPage(qreal margins)
       }
 
 //---------------------------------------------------------
-//   switchToPageMode
-//    switch to layout mode PAGE
-//---------------------------------------------------------
-
-void Score::switchToPageMode()
-      {
-      if (layoutMode() != LayoutMode::PAGE) {
-            startCmd();
-            ScoreElement::undoChangeProperty(P_ID::LAYOUT_MODE, int(LayoutMode::PAGE));
-            doLayout();
-            }
-      }
-
-//---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
 QVariant Score::getProperty(P_ID id) const
       {
       switch (id) {
-            case P_ID::LAYOUT_MODE:
-                  return QVariant(static_cast<int>(_layoutMode));
+//            case P_ID::LAYOUT_MODE:
+//                  return QVariant(static_cast<int>(_layoutMode));
             default:
                   qDebug("Score::getProperty: unhandled id");
                   return QVariant();
@@ -3967,17 +3957,17 @@ QVariant Score::getProperty(P_ID id) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Score::setProperty(P_ID id, const QVariant& v)
+bool Score::setProperty(P_ID id, const QVariant& /*v*/)
       {
       switch (id) {
-            case P_ID::LAYOUT_MODE:
-                  setLayoutMode(LayoutMode(v.toInt()));
+//            case P_ID::LAYOUT_MODE:
+//                  setLayoutMode(LayoutMode(v.toInt()));
                   break;
             default:
                   qDebug("Score::setProperty: unhandled id");
                   break;
             }
-      score()->setLayoutAll();
+      setLayoutAll();
       return true;
       }
 
@@ -3988,8 +3978,8 @@ bool Score::setProperty(P_ID id, const QVariant& v)
 QVariant Score::propertyDefault(P_ID id) const
       {
       switch (id) {
-            case P_ID::LAYOUT_MODE:
-                  return static_cast<int>(LayoutMode::PAGE);
+//            case P_ID::LAYOUT_MODE:
+//                  return static_cast<int>(LayoutMode::PAGE);
             default:
                   return QVariant();
             }

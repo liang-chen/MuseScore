@@ -646,7 +646,7 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                   }
             }
       setbbox(path.boundingRect());
-      if ((staffIdx() > 0) && score()->mscVersion() < 201 && !readPos().isNull()) {
+      if ((staffIdx() > 0) && score()->mscVersion() < 206 && !readPos().isNull()) {
             QPointF staffOffset;
             if (system() && track() >= 0)
                   staffOffset = QPointF(0.0, system()->staff(staffIdx())->y());
@@ -1190,7 +1190,7 @@ QVariant SlurTie::getProperty(P_ID propertyId) const
       {
       switch(propertyId) {
             case P_ID::LINE_TYPE:      return lineType();
-            case P_ID::SLUR_DIRECTION: return int(slurDirection());
+            case P_ID::SLUR_DIRECTION: return slurDirection();
             default:
                   return Spanner::getProperty(propertyId);
             }
@@ -1204,7 +1204,7 @@ bool SlurTie::setProperty(P_ID propertyId, const QVariant& v)
       {
       switch(propertyId) {
             case P_ID::LINE_TYPE:      setLineType(v.toInt()); break;
-            case P_ID::SLUR_DIRECTION: setSlurDirection(Direction(v.toInt())); break;
+            case P_ID::SLUR_DIRECTION: setSlurDirection(v.value<Direction>()); break;
             default:
                   return Spanner::setProperty(propertyId, v);
             }
@@ -1222,7 +1222,7 @@ QVariant SlurTie::propertyDefault(P_ID id) const
             case P_ID::LINE_TYPE:
                   return 0;
             case P_ID::SLUR_DIRECTION:
-                  return int(Direction::AUTO);
+                  return Direction(Direction::AUTO);
             default:
                   return Spanner::propertyDefault(id);
             }

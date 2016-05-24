@@ -86,6 +86,9 @@ QVariant InspectorBase::getValue(const InspectorItem& ii) const
             case P_TYPE::BARLINE_TYPE:
                   v = QVariant::fromValue(BarLineType(v.toInt()));
                   break;
+            case P_TYPE::DIRECTION:
+                  v = QVariant::fromValue(Direction(v.toInt()));
+                  break;
             default:
                   break;
             }
@@ -115,6 +118,9 @@ void InspectorBase::setValue(const InspectorItem& ii, QVariant val)
                   val = val.toDouble() / DPMM;
             case P_TYPE::SIZE_MM:
                   val = val.toDouble() / DPMM;
+                  break;
+            case P_TYPE::DIRECTION:
+                  val = int(val.value<Direction>());
                   break;
             default:
                   break;

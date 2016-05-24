@@ -1,22 +1,16 @@
 #!/bin/sh
 
 if [ "`uname`" = 'Darwin' ]; then
-      MSCORE=../build.xcode/mscore/Debug/mscore.app/Contents/MacOS/mscore
+      MSCORE=../../build.xcode/mscore/Debug/mscore.app/Contents/MacOS/mscore
       BROWSER=open
 else
-      MSCORE=../build.debug/mscore/mscore
+      MSCORE=../../build.debug/mscore/mscore
       BROWSER=rekonq
 fi
 
 if [ -n "$VTEST_MSCORE" ]; then
       MSCORE="$VTEST_MSCORE"
 fi
-
-case "$MSCORE" in
-      /*) ;;
-      ~*) ;;
-      *) MSCORE="../$MSCORE" ;;
-esac
 
 if [ -n "$VTEST_BROWSER" ]; then
       BROWSER="$VTEST_BROWSER"
@@ -45,7 +39,7 @@ else
        accidental-1 accidental-2 accidental-3 accidental-4 accidental-5\
        accidental-6 accidental-7 accidental-8 accidental-9 accidental-10\
        tie-1 tie-2 tie-3 grace-1 grace-2 grace-3 grace-4 tuplets-1 tuplets-2 breath-1\
-       harmony-1 harmony-2 harmony-3 harmony-4 harmony-5 harmony-6 harmony-7
+       harmony-1 harmony-2 harmony-3 harmony-4 harmony-5 harmony-6 harmony-7\
        harmony-8 harmony-9 harmony-10 harmony-11 harmony-12\
        beams-1 beams-2 beams-3 beams-4 beams-5 beams-6 beams-7 beams-8 beams-9 beams-10\
        beams-11 beams-12 beams-13 beams-14 beams-15 beams-16 beams-17\
@@ -62,27 +56,38 @@ fi
 #      system-4"
 
 DPI=130
-F=vtest.html
 
-rm -rf html
-mkdir html
-cd html
+DIR="$(cd "$(dirname "$0")" && pwd)"
+mkdir -p $DIR/html
+cd $DIR/html
 
-if test -f ../LOG; then
-      rm ../LOG
+if test -f LOG; then
+      rm LOG
       fi
 
+# make sure we don't put a , at the end of last line
+echo "Generate JSON job file"
+JSON_FILE=vtestjob.json
+rm -f $JSON_FILE
+echo "[" >> $JSON_FILE
+for src in $SRC ; do
+    echo "{ \"in\" : \"../$src.mscz\",         \"out\" : \"$src.png\" }," >> $JSON_FILE
+done
+echo "{}]" >> $JSON_FILE
+
+echo "Generate PNG files"
+$MSCORE -j $JSON_FILE -r $DPI 2> LOG
+
+echo "Compare PNG files and references"
 for src in $SRC; do
-      echo process ../$src
-      echo =================== process ../$src >> ../LOG
       cp ../$src-ref.png .
-      $MSCORE ../$src.mscz -r $DPI -o $src.png >> ../LOG 2>&1
       compare $src-1.png $src-ref.png $src-diff.png
       done
 
-cp -f ../style.css .
-
+echo "Generate report"
+F=vtest.html
 rm -f $F
+cp ../style.css .
 echo "<html>" >> $F
 echo "  <head>" >> $F
 echo "   <link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\">" >> $F
@@ -106,5 +111,5 @@ echo "  </body>" >> $F
 echo "</html>" >> $F
 
 
-$BROWSER $F
+$BROWSER $F 2>/dev/null
 

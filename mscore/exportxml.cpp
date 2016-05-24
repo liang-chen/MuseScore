@@ -786,7 +786,7 @@ public:
       };
 
 //---------------------------------------------------------
-// trill hadling
+// trill handling
 //---------------------------------------------------------
 
 // Find chords to attach trills to. This is necessary because in MuseScore
@@ -1447,13 +1447,11 @@ void ExportMusicXml::barlineLeft(Measure* m)
 
 void ExportMusicXml::barlineRight(Measure* m)
       {
-//      const Measure* mmR1 = m->mmRest1(); // the multi measure rest this measure is covered by
-//      const Measure* mmRLst = mmR1->isMMRest() ? mmR1->mmRestLast() : 0; // last measure of replaced sequence of empty measures
+      const Measure* mmR1 = m->mmRest1(); // the multi measure rest this measure is covered by
+      const Measure* mmRLst = mmR1->isMMRest() ? mmR1->mmRestLast() : 0; // last measure of replaced sequence of empty measures
       // note: use barlinetype as found in multi measure rest for last measure of replaced sequence
-//TODO-WS      BarLineType bst = m == mmRLst ? mmR1->endBarLineType() : m->endBarLineType();
-//      bool visible = m->endBarLineVisible();
-      BarLineType bst = BarLineType::NORMAL;
-      bool visible = true;
+      BarLineType bst = m == mmRLst ? mmR1->endBarLineType() : m->endBarLineType();
+      bool visible = m->endBarLineVisible();
 
       bool needBarStyle = (bst != BarLineType::NORMAL && bst != BarLineType::START_REPEAT) || !visible;
       Volta* volta = findVolta(m, false);
@@ -2440,9 +2438,14 @@ void ExportMusicXml::chord(Chord* chord, int staff, const QVector<Lyrics*>* ll, 
             xml.tag(useDrumset ? "display-octave" : "octave", octave);
             xml.etag();
 
+            // time signature stretch factor
+            const Fraction str = note->chord()->staff()->timeStretch(note->chord()->tick());
+            // chord's actual ticks corrected for stretch
+            const int strActTicks = note->chord()->actualTicks() * str.numerator() / str.denominator();
+
             // duration
             if (!grace)
-                  xml.tag("duration", note->chord()->actualTicks() / div);
+                  xml.tag("duration", strActTicks / div);
 
             if (note->tieBack())
                   xml.tagE("tie type=\"stop\"");
@@ -2478,11 +2481,10 @@ void ExportMusicXml::chord(Chord* chord, int staff, const QVector<Lyrics*>* ll, 
                   nrmTicks = determineTupletNormalTicks(chord);
                   }
 
-            QString s = tick2xml(note->chord()->actualTicks() * actNotes * tremCorr / nrmNotes, &dots);
-            if (s.isEmpty()) {
-                  qDebug("no note type found for ticks %d",
-                         note->chord()->actualTicks());
-                  }
+            QString s = tick2xml(strActTicks * actNotes * tremCorr / nrmNotes, &dots);
+            if (s.isEmpty())
+                  qDebug("no note type found for ticks %d", strActTicks);
+
             if (note->small())
                   xml.tag("type size=\"cue\"", s);
             else

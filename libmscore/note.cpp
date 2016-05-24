@@ -853,7 +853,7 @@ void Note::read(XmlReader& e)
                   a->read(e);
                   if (!hasAccidental)           // only the new accidental, if it has been added previously
                         add(a);
-                  if (score()->mscVersion() < 117)
+                  if (score()->mscVersion() <= 114)
                         hasAccidental = true;   // we now have an accidental
                   }
             else if (tag == "Tie") {
@@ -1122,7 +1122,7 @@ void Note::read(XmlReader& e)
       // ensure sane values:
       _pitch = limit(_pitch, 0, 127);
 
-      if (score()->mscVersion() < 117) {
+      if (score()->mscVersion() <= 114) {
             if (concertPitch()) {
                   _tpc[1]  = Tpc::TPC_INVALID;
                   }
@@ -1656,12 +1656,14 @@ void Note::setDotY(Direction pos)
             dot->setTrack(track());  // needed to know the staff it belongs to (and detect tablature)
             dot->setVisible(visible());
             score()->undoAddElement(dot);
-            dot->layout();
-            dot->rypos() = y;
             }
       if (n < 0) {
             for (int i = 0; i < -n; ++i)
                   score()->undoRemoveElement(_dots.back());
+            }
+      for (NoteDot* dot : _dots) {
+            dot->layout();
+            dot->rypos() = y;
             }
       }
 
@@ -1795,15 +1797,14 @@ void Note::updateAccidental(AccidentalState* as)
                   return;
             if ((accVal != relLineAccVal) || hidden() || as->tieContext(relLine)) {
                   as->setAccidentalVal(relLine, accVal, _tieBack != 0);
-                  if (_tieBack)
+                  acci = Accidental::value2subtype(accVal);
+                  // if previous tied note has same tpc, don't show accidental
+                  if (_tieBack && _tieBack->startNote()->tpc1() == tpc1())
                         acci = AccidentalType::NONE;
-                  else {
-                        acci = Accidental::value2subtype(accVal);
-                        if (acci == AccidentalType::NONE)
-                              acci = AccidentalType::NATURAL;
-                        }
+                  else if (acci == AccidentalType::NONE)
+                        acci = AccidentalType::NATURAL;
                   }
-            if (acci != AccidentalType::NONE && !_tieBack && !_hidden) {
+            if (acci != AccidentalType::NONE && !_hidden) {
                   if (_accidental == 0) {
                         Accidental* a = new Accidental(score());
                         a->setParent(this);
@@ -1942,7 +1943,7 @@ void Note::reset()
       {
       score()->undoChangeProperty(this, P_ID::USER_OFF, QPointF());
       score()->undoChangeProperty(chord(), P_ID::USER_OFF, QPointF());
-      score()->undoChangeProperty(chord(), P_ID::STEM_DIRECTION, int(Direction::AUTO));
+      score()->undoChangeProperty(chord(), P_ID::STEM_DIRECTION, Direction(Direction::AUTO));
       }
 
 //---------------------------------------------------------
@@ -2155,7 +2156,7 @@ void Note::setNval(const NoteVal& nval, int tick)
 
 QVariant Note::getProperty(P_ID propertyId) const
       {
-      switch(propertyId) {
+      switch (propertyId) {
             case P_ID::PITCH:
                   return pitch();
             case P_ID::TPC1:
@@ -2167,7 +2168,7 @@ QVariant Note::getProperty(P_ID propertyId) const
             case P_ID::MIRROR_HEAD:
                   return int(userMirror());
             case P_ID::DOT_POSITION:
-                  return QVariant::fromValue(userDotPosition());
+                  return userDotPosition();
             case P_ID::HEAD_GROUP:
                   return int(headGroup());
             case P_ID::VELO_OFFSET:
@@ -2227,7 +2228,8 @@ bool Note::setProperty(P_ID propertyId, const QVariant& v)
                   break;
             case P_ID::DOT_POSITION:
                   setUserDotPosition(v.value<Direction>());
-                  break;
+                  score()->setLayout(tick());
+                  return true;
             case P_ID::HEAD_GROUP:
                   setHeadGroup(NoteHead::Group(v.toInt()));
                   break;
@@ -2372,7 +2374,7 @@ void Note::undoSetUserMirror(MScore::DirectionH val)
 
 void Note::undoSetUserDotPosition(Direction val)
       {
-      undoChangeProperty(P_ID::DOT_POSITION, int(val));
+      undoChangeProperty(P_ID::DOT_POSITION, val);
       }
 
 //---------------------------------------------------------
@@ -2415,7 +2417,7 @@ QVariant Note::propertyDefault(P_ID propertyId) const
             case P_ID::MIRROR_HEAD:
                   return int(MScore::DirectionH::AUTO);
             case P_ID::DOT_POSITION:
-                  return QVariant::fromValue(Direction(Direction::AUTO));
+                  return Direction(Direction::AUTO);
             case P_ID::HEAD_GROUP:
                   return int(NoteHead::Group::HEAD_NORMAL);
             case P_ID::VELO_OFFSET:

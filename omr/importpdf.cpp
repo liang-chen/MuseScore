@@ -51,7 +51,7 @@ class OmrState {
       int tick = 0;
 
       void importPdfPage(OmrPage* omrPage);
-      int importPdfSystem(int tick, OmrSystem* omrSystem);
+      int importPdfSystem(OmrSystem* omrSystem);
       void importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem);
       };
 
@@ -61,89 +61,99 @@ class OmrState {
 
 void OmrState::importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem)
       {
-      Measure* measure = new Measure(score);
-      measure->setTick(tick);
-      if (m->timesig()) {
-            timesig = m->timesig()->timesig;
-            score->sigmap()->add(tick, SigEvent(timesig));
-            }
-      measure->setTimesig(timesig);
-      measure->setLen(timesig);
+          Measure* measure = new Measure(score);
+          measure->setTick(tick);
+          if (m->timesig()) {
+                timesig = m->timesig()->timesig;
+                score->sigmap()->add(tick, SigEvent(timesig));
+                }
+          measure->setTimesig(timesig);
+          measure->setLen(timesig);
+          TDuration d(TDuration::DurationType::V_MEASURE);
+          Rest* rest;
+          Segment* s = measure->getSegment(Segment::Type::ChordRest, tick);
+          for (int staffIdx = 0; staffIdx < omrSystem->staves().size(); ++staffIdx) {
+                rest = new Rest(score, d);
+                rest->setDuration(timesig);
+                rest->setTrack(staffIdx*4);
+                s->add(rest);
+                }
+#if 0
+      for (int staffIdx = 0; staffIdx < omrSystem->staves().size(); ++staffIdx) {
+            if (tick == 0) {
+                  const OmrStaff& omrStaff = omrSystem->staves()[staffIdx];
+                  int keySigType = omrStaff.keySig().type;
+                  KeySig* ks     = new KeySig(score);
+                  //ks->setSig(keySigType, keySigType);
+                  ks->setTrack(staffIdx * VOICES);
+                Segment* s = measure->getSegment(Segment::Type::KeySig, 0);
+                  s->add(ks);
+                  //score->staff(staffIdx)->setKey(0, keySigType);
+                  }
 
-//      for (int staffIdx = 0; staffIdx < omrSystem->staves().size(); ++staffIdx) {
-//            if (tick == 0) {
-//                  const OmrStaff& omrStaff = omrSystem->staves()[staffIdx];
-//                  int keySigType = omrStaff.keySig().type;
-//                  KeySig* ks     = new KeySig(score);
-//                  //ks->setSig(keySigType, keySigType);
-//                  ks->setTrack(staffIdx * VOICES);
-//                Segment* s = measure->getSegment(Segment::Type::KeySig, 0);
-//                  s->add(ks);
-//                  //score->staff(staffIdx)->setKey(0, keySigType);
-//                  }
-//
-//            if (m->timesig()) {
-//                  TimeSig* ts = new TimeSig(score);
-//                Segment* s = measure->getSegment(Segment::Type::TimeSig, tick);
-//                  ts->setSig(timesig);
-//                  ts->setTrack(staffIdx * VOICES);
-//                  s->add(ts);
-//                  }
-//            Fraction nl;
-//            QList<OmrChord>& chords = m->chords()[staffIdx];
-//            if (timesig == Fraction(3,8)) {
-//                  if (chords.size() == 1) {
-//                        chords[0].duration = TDuration(timesig);
-//                        }
-//                  else if (chords.size() == 3) {
-//                        int i = 0;
-//                        for (;i < 3; ++i) {
-//                              if (chords[i].duration.fraction() != Fraction(1,4))
-//                                    break;
-//                              }
-//                        if (i == 3) {
-//                              for (i = 0;i < 3; ++i) {
-//                                    chords[i].duration = TDuration(Fraction(1, 8));
-//                                    }
-//                              }
-//                        }
-//                  }
-//            foreach(const OmrChord& omrChord, chords) {
-//                  nl += omrChord.duration.fraction();
-//                  }
-//            bool notesOk = nl == timesig;
-//
-//            if (notesOk) {
-//                  int ltick = 0;
-//                  foreach(const OmrChord& omrChord, chords) {
-//                        Chord* chord = new Chord(score);
-//                        chord->setDurationType(omrChord.duration);
-//                        chord->setDuration(omrChord.duration.fraction());
-//                        chord->setTrack(staffIdx * VOICES);
-//                      Segment* s = measure->getSegment(Segment::Type::ChordRest, tick + ltick);
-//                        s->add(chord);
-//                        //int keyType = score->staff(staffIdx)->key(tick + ltick).accidentalType();
-//
-//                        foreach (OmrNote* omrNote, omrChord.notes) {
-//                              Note* note = new Note(score);
-//                              //ClefType clef = score->staff(staffIdx)->initialClef()._concertClef;
-//                              //int pitch = line2pitch(omrNote->line, clef, keyType);
-//                              //note->setPitch(pitch);
-//                              note->setTpcFromPitch();
-//                              chord->add(note);
-//                              }
-//                        ltick += omrChord.duration.ticks();
-//                        }
-//                  }
-//            else {
-//                TDuration d(TDuration::DurationType::V_MEASURE);
-//                Segment* s = measure->getSegment(Segment::Type::ChordRest, measure->tick());
-//                  Rest* rest = new Rest(score, d);
-//                  rest->setDuration(timesig);
-//                  rest->setTrack(staffIdx * VOICES);
-//                  s->add(rest);
-//                  }
-//            }
+            if (m->timesig()) {
+                  TimeSig* ts = new TimeSig(score);
+                Segment* s = measure->getSegment(Segment::Type::TimeSig, tick);
+                  ts->setSig(timesig);
+                  ts->setTrack(staffIdx * VOICES);
+                  s->add(ts);
+                  }
+            Fraction nl;
+            QList<OmrChord>& chords = m->chords()[staffIdx];
+            if (timesig == Fraction(3,8)) {
+                  if (chords.size() == 1) {
+                        chords[0].duration = TDuration(timesig);
+                        }
+                  else if (chords.size() == 3) {
+                        int i = 0;
+                        for (;i < 3; ++i) {
+                              if (chords[i].duration.fraction() != Fraction(1,4))
+                                    break;
+                              }
+                        if (i == 3) {
+                              for (i = 0;i < 3; ++i) {
+                                    chords[i].duration = TDuration(Fraction(1, 8));
+                                    }
+                              }
+                        }
+                  }
+            foreach(const OmrChord& omrChord, chords) {
+                  nl += omrChord.duration.fraction();
+                  }
+            bool notesOk = nl == timesig;
+
+            if (notesOk) {
+                  int ltick = 0;
+                  foreach(const OmrChord& omrChord, chords) {
+                        Chord* chord = new Chord(score);
+                        chord->setDurationType(omrChord.duration);
+                        chord->setDuration(omrChord.duration.fraction());
+                        chord->setTrack(staffIdx * VOICES);
+                      Segment* s = measure->getSegment(Segment::Type::ChordRest, tick + ltick);
+                        s->add(chord);
+                        //int keyType = score->staff(staffIdx)->key(tick + ltick).accidentalType();
+
+                        foreach (OmrNote* omrNote, omrChord.notes) {
+                              Note* note = new Note(score);
+                              //ClefType clef = score->staff(staffIdx)->initialClef()._concertClef;
+                              //int pitch = line2pitch(omrNote->line, clef, keyType);
+                              //note->setPitch(pitch);
+                              note->setTpcFromPitch();
+                              chord->add(note);
+                              }
+                        ltick += omrChord.duration.ticks();
+                        }
+                  }
+            else {
+                TDuration d(TDuration::DurationType::V_MEASURE);
+                Segment* s = measure->getSegment(Segment::Type::ChordRest, measure->tick());
+                  Rest* rest = new Rest(score, d);
+                  rest->setDuration(timesig);
+                  rest->setTrack(staffIdx * VOICES);
+                  s->add(rest);
+                  }
+            }
+#endif
 
       score->measures()->add(measure);
       tick += measure->timesig().ticks();
@@ -153,7 +163,7 @@ void OmrState::importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem)
 //   importPdfSystem
 //---------------------------------------------------------
 
-int OmrState::importPdfSystem(int tick, OmrSystem* omrSystem)
+int OmrState::importPdfSystem(OmrSystem* omrSystem)
       {
       for (int i = 0; i < omrSystem->measures().size(); ++i) {
             OmrMeasure* m = &omrSystem->measures()[i];
@@ -161,7 +171,7 @@ int OmrState::importPdfSystem(int tick, OmrSystem* omrSystem)
             }
       LayoutBreak* b = new LayoutBreak(score);
       b->setLayoutBreakType(LayoutBreak::Type::LINE);
-      //score->lastMeasure()->add(b);
+      score->lastMeasure()->add(b);
       return tick;
       }
 
@@ -171,7 +181,7 @@ int OmrState::importPdfSystem(int tick, OmrSystem* omrSystem)
 
 void OmrState::importPdfPage(OmrPage* omrPage)
       {
-          TDuration d(TDuration::DurationType::V_MEASURE);
+      TDuration d(TDuration::DurationType::V_MEASURE);
       int tick         = 0;
 
       int nsystems = omrPage->systems().size();
@@ -179,7 +189,7 @@ void OmrState::importPdfPage(OmrPage* omrPage)
       for (int k = 0; k < n; ++k) {
             int numMeasures = 1;
             if (k < nsystems) {
-                  tick = importPdfSystem(tick, omrPage->system(k));
+                  tick = importPdfSystem(omrPage->system(k));
                   }
             else {
                   Measure* measure;
@@ -187,15 +197,15 @@ void OmrState::importPdfPage(OmrPage* omrPage)
                         measure = new Measure(score);
                         measure->setTick(tick);
 
-      		      Rest* rest = new Rest(score, d);
+                        Rest* rest = new Rest(score, d);
                         rest->setDuration(Fraction(4,4));
                         rest->setTrack(0);
-                      Segment* s = measure->getSegment(Segment::Type::ChordRest, tick);
-      	            s->add(rest);
-      		      rest = new Rest(score, d);
+                        Segment* s = measure->getSegment(Segment::Type::ChordRest, tick);
+                        s->add(rest);
+                        rest = new Rest(score, d);
                         rest->setDuration(Fraction(4,4));
                         rest->setTrack(4);
-      	            s->add(rest);
+                        s->add(rest);
                         score->measures()->add(measure);
                         tick += MScore::division * 4;
                         }
@@ -218,7 +228,7 @@ void OmrState::importPdfPage(OmrPage* omrPage)
 //   importPdf
 //---------------------------------------------------------
 
-Score::FileError importPdf(Score* score, const QString& path)
+Score::FileError importPdf(MasterScore* score, const QString& path)
       {
       Omr* omr = new Omr(path, score);
       if (!omr->readPdf()) {
@@ -230,49 +240,38 @@ Score::FileError importPdf(Score* score, const QString& path)
       qreal sp = omr->spatiumMM();
       if (sp == 0.0)
             sp = 1.5;
-      score->setSpatium(sp * MScore::DPMM);
+      score->setSpatium(sp * DPMM);
       score->style()->set(StyleIdx::lastSystemFillLimit, 0.0);
-          score->style()->set(StyleIdx::staffLowerBorder, 0.0);
-          score->style()->set(StyleIdx::measureSpacing, 1.0);
+      score->style()->set(StyleIdx::staffLowerBorder, 0.0);
+      score->style()->set(StyleIdx::measureSpacing, 1.0);
 
       PageFormat pF;
       pF.copy(*score->pageFormat());
-      pF.setEvenLeftMargin(5.0 * MScore::DPMM / MScore::DPI);
+      pF.setEvenLeftMargin(5.0 * DPMM / DPI);
       pF.setEvenTopMargin(0);
       pF.setEvenBottomMargin(0);
-      pF.setOddLeftMargin(5.0 * MScore::DPMM / MScore::DPI);
+      pF.setOddLeftMargin(5.0 * DPMM / DPI);
       pF.setOddTopMargin(0);
       pF.setOddBottomMargin(0);
       score->setPageFormat(pF);
 
-          score->style()->set(StyleIdx::minSystemDistance,   Spatium(omr->systemDistance()));
-          score->style()->set(StyleIdx::maxSystemDistance,   Spatium(omr->systemDistance()));
-          score->style()->set(StyleIdx::akkoladeDistance,    Spatium(omr->staffDistance()));
+      score->style()->set(StyleIdx::minSystemDistance,   Spatium(omr->systemDistance()));
+      score->style()->set(StyleIdx::maxSystemDistance,   Spatium(omr->systemDistance()));
+      score->style()->set(StyleIdx::akkoladeDistance,    Spatium(omr->staffDistance()));
 
+      //incomplete implementation for musescore skeletion creation
       Part* part   = new Part(score);
-      Staff* staff1 = new Staff(score);
-      part->staves()->push_back(staff1);
-      
-      score->staves().insert(0, staff1);
-      Staff* staff2 = new Staff(score);
-      part->staves()->push_back(staff2);
-      score->staves().insert(1, staff2);
-          
-      staff1->setPart(part);
-      staff2->setPart(part);
-      
-      part->staves()->front()->setBarLineSpan(part->nstaves());
-      score->insertPart(part, 0);
-
-      //---set initial clefs
-
       OmrPage* omrPage = omr->pages().front();
-      int staves = score->nstaves();
-      for (int i = 0; i < staves; ++i) {
-            Staff* staff = score->staff(i);
-            const OmrStaff& omrStaff = omrPage->systems().front().staves()[i];
-            //staff->setInitialClef(omrStaff.clef().type);
-            }
+
+      if(omrPage->systems().size() > 0){
+              for (int i = 0; i < omrPage->systems().front().staves().size(); i++) {
+                  Staff* staff = new Staff(score);
+                  staff->setPart(part);
+                  part->insertStaff(staff, -1);
+                  score->staves().append(staff);
+              }
+          }
+      score->appendPart(part);
 
       OmrState state;
       state.score = score;
@@ -281,8 +280,8 @@ Score::FileError importPdf(Score* score, const QString& path)
 
       //---create bracket
 
-      score->staff(0)->setBracket(0, BracketType::BRACE);
-      score->staff(0)->setBracketSpan(0, 2);
+      //score->staff(0)->setBracket(0, BracketType::BRACE);
+      //score->staff(0)->setBracketSpan(0, 2);
 
       score->setShowOmr(true);
       omr->page(0)->readHeader(score);

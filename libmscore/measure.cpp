@@ -776,9 +776,15 @@ void Measure::spatiumChanged(qreal /*oldValue*/, qreal /*newValue*/)
 void Measure::moveTicks(int diff)
       {
       setTick(tick() + diff);
-      for (Segment* segment = first(); segment; segment = segment->next()) {
+//      for (Segment* segment = first(); segment; segment = segment->next()) {
+//            if (segment->segmentType() & (Segment::Type::EndBarLine | Segment::Type::TimeSigAnnounce))
+//                  segment->setTick(tick() + ticks());
+//            }
+      for (Segment* segment = last(); segment; segment = segment->prev()) {
             if (segment->segmentType() & (Segment::Type::EndBarLine | Segment::Type::TimeSigAnnounce))
                   segment->setTick(tick() + ticks());
+            else if (segment->isChordRestType())
+                  break;
             }
       }
 
@@ -1184,9 +1190,8 @@ Element* Measure::drop(const DropData& data)
 
             case Element::Type::KEYSIG:
                   {
-                  KeySig* ks    = static_cast<KeySig*>(e);
-                  KeySigEvent k = ks->keySigEvent();
-                  delete ks;
+                  KeySigEvent k = toKeySig(e)->keySigEvent();
+                  delete e;
 
                   if (data.modifiers & Qt::ControlModifier) {
                         // apply only to this stave
@@ -1194,7 +1199,7 @@ Element* Measure::drop(const DropData& data)
                         }
                   else {
                         // apply to all staves:
-                        for(Staff* s : score()->staves())
+                        for (Staff* s : score()->staves())
                               score()->undoChangeKeySig(s, tick(), k);
                         }
 
@@ -1734,7 +1739,7 @@ void Measure::read(XmlReader& e, int staffIdx)
                   breath->setTrack(e.track());
                   int tick = e.tick();
                   breath->read(e);
-                  if (score()->mscVersion() < 205) {
+                  if (score()->mscVersion() <= 206) {
                         // older scores placed the breath segment right after the chord to which it applies
                         // rather than before the next chordrest segment with an element for the staff
                         // result would be layout too far left if there are other segments due to notes in other staves
@@ -2129,39 +2134,7 @@ void Measure::read(XmlReader& e, int staffIdx)
                   }
             }
 #endif
-      //
-      // for compatibility with 1.22:
-      //
-      if (score()->mscVersion() == 122) {
-            int ticks1 = 0;
-            for (Segment* s = last(); s; s = s->prev()) {
-                  if (s->segmentType() == Segment::Type::ChordRest) {
-                        if (s->element(0)) {
-                              ChordRest* cr = static_cast<ChordRest*>(s->element(0));
-                              if (cr->type() == Element::Type::REPEAT_MEASURE)
-                                    ticks1 = ticks();
-                              else
-                                    ticks1 = s->rtick() + cr->actualTicks();
-                              break;
-                              }
-                        }
-                  }
-            if (ticks() != ticks1) {
-                  // this is a irregular measure
-                  _len = Fraction::fromTicks(ticks1);
-                  _len.reduce();
-                  for (Segment* s = last(); s; s = s->prev()) {
-                        if (s->tick() < tick() + ticks())
-                              break;
-                        if (s->segmentType() == Segment::Type::BarLine) {
-                              qDebug("reduce BarLine to EndBarLine");
-                              s->setSegmentType(Segment::Type::EndBarLine);
-                              }
-                        }
-
-                  }
-            }
-      foreach (Tuplet* tuplet, e.tuplets()) {
+      for (Tuplet* tuplet : e.tuplets()) {
             if (tuplet->elements().empty()) {
                   // this should not happen and is a sign of input file corruption
                   qDebug("Measure:read(): empty tuplet id %d (%p), input file corrupted?",
@@ -2348,6 +2321,34 @@ void Measure::setStartRepeatBarLine()
             }
       if (s)
             s->createShapes();
+      }
+
+//---------------------------------------------------------
+//   setEndBarLineType
+//     Create a *generated* barline with the given type and
+//     properties if none exists. Modify if it exists.
+//     Useful for import filters.
+//---------------------------------------------------------
+
+void Measure::setEndBarLineType(BarLineType val, int track, bool visible, QColor color)
+      {
+      Segment* seg = undoGetSegment(Segment::Type::EndBarLine, endTick());
+      // get existing bar line for this staff, if any
+      BarLine* bl = toBarLine(seg->element(track));
+      if (!bl) {
+            // no suitable bar line: create a new one
+            bl = new BarLine(score());
+            bl->setParent(seg);
+            bl->setTrack(track);
+            score()->addElement(bl);
+            }
+      bl->setGenerated(false);
+      bl->setBarLineType(val);
+      bl->setVisible(visible);
+      if (color.isValid())
+            bl->setColor(color);
+      else
+            bl->setColor(curColor());
       }
 
 //---------------------------------------------------------
@@ -2842,50 +2843,6 @@ qreal Measure::minWidth1() const
             s = s->next();
             }
       return score()->computeMinWidth(s, false);
-      }
-
-//---------------------------------------------------------
-//   layoutCR0
-//---------------------------------------------------------
-
-void Measure::layoutCR0(ChordRest* cr, qreal mm, AccidentalState* as)
-      {
-      qreal m = mm;
-      if (cr->small())
-            m *= score()->styleD(StyleIdx::smallNoteMag);
-
-      if (cr->isChord()) {
-            Chord* chord = toChord(cr);
-            for (Chord* c : chord->graceNotes())
-                  layoutCR0(c, mm, as);
-            if (!chord->isGrace())
-                  chord->cmdUpdateNotes(as);
-
-            if (chord->noteType() != NoteType::NORMAL)
-                  m *= score()->styleD(StyleIdx::graceNoteMag);
-            const Drumset* drumset = 0;
-            if (cr->part()->instrument()->useDrumset())
-                  drumset = cr->part()->instrument()->drumset();
-            if (drumset) {
-                  for (Note* note : chord->notes()) {
-                        int pitch = note->pitch();
-                        if (!drumset->isValid(pitch)) {
-                              // qDebug("unmapped drum note %d", pitch);
-                              }
-                        else if (!note->fixed()) {
-                              note->undoChangeProperty(P_ID::HEAD_GROUP, int(drumset->noteHead(pitch)));
-                              // note->setHeadGroup(drumset->noteHead(pitch));
-                              note->setLine(drumset->line(pitch));
-                              continue;
-                              }
-                        }
-                  }
-            chord->computeUp();
-            chord->layoutStem1();   // create stems needed to calculate spacing
-                                    // stem direction can change later during beam processing
-            }
-      if (m != mag())
-            cr->setMag(m);
       }
 
 //---------------------------------------------------------
@@ -3455,6 +3412,32 @@ BarLineType Measure::endBarLineType() const
             }
       return BarLineType::NORMAL;
       }
+
+//---------------------------------------------------------
+//   endBarLineType
+//    Assume all barlines have same visiblity if there is more
+//    than one.
+//---------------------------------------------------------
+
+bool Measure::endBarLineVisible() const
+      {
+      // search barline segment:
+
+      Segment* s = last();
+      while (s && s->segmentType() != Segment::Type::EndBarLine)
+            s = s->prev();
+
+      // search first element
+
+      if (s) {
+            for (const Element* e : s->elist()) {
+                  if (e)
+                        return toBarLine(e)->visible();
+                  }
+            }
+      return true;
+      }
+
 
 }
 

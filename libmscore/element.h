@@ -76,6 +76,7 @@ class Beam;
 class Hook;
 class StemSlash;
 class Spacer;
+class StaffLines;
 
 enum class SymId;
 
@@ -415,6 +416,7 @@ class Element : public QObject, public ScoreElement {
       virtual int subtype() const   { return -1; }  // for select gui
 
       virtual void draw(QPainter*) const {}
+      void drawAt(QPainter*p, const QPointF& pt) const { p->translate(pt); draw(p); p->translate(-pt);}
 
       virtual void writeProperties(Xml& xml) const;
       virtual bool readProperties(XmlReader&);
@@ -629,43 +631,44 @@ class Element : public QObject, public ScoreElement {
 #define CONVERT(a,b) \
       bool is##a() const { return type() == Element::Type::b; }
 
-      CONVERT(Note,          NOTE);
-      CONVERT(Rest,          REST);
-      CONVERT(Chord,         CHORD);
-      CONVERT(BarLine,       BAR_LINE);
-      CONVERT(Articulation,  ARTICULATION);
-      CONVERT(Marker,        MARKER);
-      CONVERT(Clef,          CLEF);
-      CONVERT(KeySig,        KEYSIG);
-      CONVERT(TimeSig,       TIMESIG);
-      CONVERT(Measure,       MEASURE);
-      CONVERT(TempoText,     TEMPO_TEXT);
-      CONVERT(Breath,        BREATH);
-      CONVERT(HBox,          HBOX);
-      CONVERT(VBox,          VBOX);
-      CONVERT(TBox,          TBOX);
-      CONVERT(FBox,          FBOX);
-      CONVERT(Tie,           TIE);
-      CONVERT(Slur,          SLUR);
-      CONVERT(Glissando,     GLISSANDO);
-      CONVERT(SystemDivider, SYSTEM_DIVIDER);
-      CONVERT(RehearsalMark, REHEARSAL_MARK);
-      CONVERT(Harmony,       HARMONY);
-      CONVERT(Volta,         VOLTA);
-      CONVERT(Jump,          JUMP);
-      CONVERT(StaffText,     STAFF_TEXT);
-      CONVERT(Ottava,        OTTAVA);
-      CONVERT(LayoutBreak,   LAYOUT_BREAK);
-      CONVERT(Segment,       SEGMENT);
-      CONVERT(Tremolo,       TREMOLO);
-      CONVERT(System,        SYSTEM);
-      CONVERT(Lyrics,        LYRICS);
-      CONVERT(Stem,          STEM);
-      CONVERT(Beam,          BEAM);
-      CONVERT(Hook,          HOOK);
-      CONVERT(StemSlash,     STEM_SLASH);
-      CONVERT(SlurSegment,   SLUR_SEGMENT);
-      CONVERT(Spacer,        SPACER);
+      CONVERT(Note,          NOTE)
+      CONVERT(Rest,          REST)
+      CONVERT(Chord,         CHORD)
+      CONVERT(BarLine,       BAR_LINE)
+      CONVERT(Articulation,  ARTICULATION)
+      CONVERT(Marker,        MARKER)
+      CONVERT(Clef,          CLEF)
+      CONVERT(KeySig,        KEYSIG)
+      CONVERT(TimeSig,       TIMESIG)
+      CONVERT(Measure,       MEASURE)
+      CONVERT(TempoText,     TEMPO_TEXT)
+      CONVERT(Breath,        BREATH)
+      CONVERT(HBox,          HBOX)
+      CONVERT(VBox,          VBOX)
+      CONVERT(TBox,          TBOX)
+      CONVERT(FBox,          FBOX)
+      CONVERT(Tie,           TIE)
+      CONVERT(Slur,          SLUR)
+      CONVERT(Glissando,     GLISSANDO)
+      CONVERT(SystemDivider, SYSTEM_DIVIDER)
+      CONVERT(RehearsalMark, REHEARSAL_MARK)
+      CONVERT(Harmony,       HARMONY)
+      CONVERT(Volta,         VOLTA)
+      CONVERT(Jump,          JUMP)
+      CONVERT(StaffText,     STAFF_TEXT)
+      CONVERT(Ottava,        OTTAVA)
+      CONVERT(LayoutBreak,   LAYOUT_BREAK)
+      CONVERT(Segment,       SEGMENT)
+      CONVERT(Tremolo,       TREMOLO)
+      CONVERT(System,        SYSTEM)
+      CONVERT(Lyrics,        LYRICS)
+      CONVERT(Stem,          STEM)
+      CONVERT(Beam,          BEAM)
+      CONVERT(Hook,          HOOK)
+      CONVERT(StemSlash,     STEM_SLASH)
+      CONVERT(SlurSegment,   SLUR_SEGMENT)
+      CONVERT(Spacer,        SPACER)
+      CONVERT(StaffLines,    STAFF_LINES)
 #undef CONVERT
       };
 
@@ -692,43 +695,44 @@ static inline const ChordRest* toChordRest(const Element* e) {
 static inline a* to##a(Element* e) { Q_ASSERT(e == 0 || e->type() == Element::Type::b); return (a*)e; } \
 static inline const a* to##a(const Element* e) { Q_ASSERT(e == 0 || e->type() == Element::Type::b); return (const a*)e; }
 
-      CONVERT(Note,          NOTE);
-      CONVERT(Rest,          REST);
-      CONVERT(Chord,         CHORD);
-      CONVERT(BarLine,       BAR_LINE);
-      CONVERT(Articulation,  ARTICULATION);
-      CONVERT(Marker,        MARKER);
-      CONVERT(Clef,          CLEF);
-      CONVERT(KeySig,        KEYSIG);
-      CONVERT(TimeSig,       TIMESIG);
-      CONVERT(Measure,       MEASURE);
-      CONVERT(TempoText,     TEMPO_TEXT);
-      CONVERT(Breath,        BREATH);
-      CONVERT(HBox,          HBOX);
-      CONVERT(VBox,          VBOX);
-      CONVERT(TBox,          TBOX);
-      CONVERT(FBox,          FBOX);
-      CONVERT(Tie,           TIE);
-      CONVERT(Slur,          SLUR);
-      CONVERT(Glissando,     GLISSANDO);
-      CONVERT(SystemDivider, SYSTEM_DIVIDER);
-      CONVERT(RehearsalMark, REHEARSAL_MARK);
-      CONVERT(Harmony,       HARMONY);
-      CONVERT(Volta,         VOLTA);
-      CONVERT(Jump,          JUMP);
-      CONVERT(StaffText,     STAFF_TEXT);
-      CONVERT(Ottava,        OTTAVA);
-      CONVERT(LayoutBreak,   LAYOUT_BREAK);
-      CONVERT(Segment,       SEGMENT);
-      CONVERT(Tremolo,       TREMOLO);
-      CONVERT(System,        SYSTEM);
-      CONVERT(Lyrics,        LYRICS);
-      CONVERT(Stem,          STEM);
-      CONVERT(Beam,          BEAM);
-      CONVERT(Hook,          HOOK);
-      CONVERT(StemSlash,     STEM_SLASH);
-      CONVERT(SlurSegment,   SLUR_SEGMENT);
-      CONVERT(Spacer,        SPACER);
+      CONVERT(Note,          NOTE)
+      CONVERT(Rest,          REST)
+      CONVERT(Chord,         CHORD)
+      CONVERT(BarLine,       BAR_LINE)
+      CONVERT(Articulation,  ARTICULATION)
+      CONVERT(Marker,        MARKER)
+      CONVERT(Clef,          CLEF)
+      CONVERT(KeySig,        KEYSIG)
+      CONVERT(TimeSig,       TIMESIG)
+      CONVERT(Measure,       MEASURE)
+      CONVERT(TempoText,     TEMPO_TEXT)
+      CONVERT(Breath,        BREATH)
+      CONVERT(HBox,          HBOX)
+      CONVERT(VBox,          VBOX)
+      CONVERT(TBox,          TBOX)
+      CONVERT(FBox,          FBOX)
+      CONVERT(Tie,           TIE)
+      CONVERT(Slur,          SLUR)
+      CONVERT(Glissando,     GLISSANDO)
+      CONVERT(SystemDivider, SYSTEM_DIVIDER)
+      CONVERT(RehearsalMark, REHEARSAL_MARK)
+      CONVERT(Harmony,       HARMONY)
+      CONVERT(Volta,         VOLTA)
+      CONVERT(Jump,          JUMP)
+      CONVERT(StaffText,     STAFF_TEXT)
+      CONVERT(Ottava,        OTTAVA)
+      CONVERT(LayoutBreak,   LAYOUT_BREAK)
+      CONVERT(Segment,       SEGMENT)
+      CONVERT(Tremolo,       TREMOLO)
+      CONVERT(System,        SYSTEM)
+      CONVERT(Lyrics,        LYRICS)
+      CONVERT(Stem,          STEM)
+      CONVERT(Beam,          BEAM)
+      CONVERT(Hook,          HOOK)
+      CONVERT(StemSlash,     STEM_SLASH)
+      CONVERT(SlurSegment,   SLUR_SEGMENT)
+      CONVERT(Spacer,        SPACER)
+      CONVERT(StaffLines,    STAFF_LINES)
 #undef CONVERT
 
 //---------------------------------------------------------

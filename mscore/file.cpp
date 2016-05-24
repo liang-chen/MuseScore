@@ -126,13 +126,15 @@ static QString createDefaultFileName(QString fn)
       fn = fn.simplified();
       fn = fn.replace(QChar(' '),  "_");
       fn = fn.replace(QChar('\n'), "_");
-      fn = fn.replace(QChar(0xe4), "ae");
-      fn = fn.replace(QChar(0xf6), "oe");
-      fn = fn.replace(QChar(0xfc), "ue");
-      fn = fn.replace(QChar(0xdf), "ss");
-      fn = fn.replace(QChar(0xc4), "Ae");
-      fn = fn.replace(QChar(0xd6), "Oe");
-      fn = fn.replace(QChar(0xdc), "Ue");
+      fn = fn.replace(QChar(0xe4), "ae"); // &auml;
+      fn = fn.replace(QChar(0xf6), "oe"); // &ouml;
+      fn = fn.replace(QChar(0xfc), "ue"); // &uuml;
+      fn = fn.replace(QChar(0xdf), "ss"); // &szlig;
+      fn = fn.replace(QChar(0xc4), "Ae"); // &Auml;
+      fn = fn.replace(QChar(0xd6), "Oe"); // &Ouml;
+      fn = fn.replace(QChar(0xdc), "Ue"); // &Uuml;
+      fn = fn.replace(QChar(0x266d),"b"); // musical flat sign, happen in instrument names, so can happen in part (file) names
+      fn = fn.replace(QChar(0x266f),"#"); // musical sharp sign, can happen in titles, so can happen in score (file) names
       fn = fn.replace( QRegExp( "[" + QRegExp::escape( "\\/:*?\"<>|" ) + "]" ), "_" ); //FAT/NTFS special chars
       return fn;
       }
@@ -141,6 +143,7 @@ static QString createDefaultFileName(QString fn)
 //   readScoreError
 //    if "ask" is true, ask to ignore; returns true if
 //    ignore is pressed by user
+//    returns true if -f is used in converter mode
 //---------------------------------------------------------
 
 static bool readScoreError(const QString& name, Score::FileError error, bool ask)
@@ -163,7 +166,10 @@ static bool readScoreError(const QString& name, Score::FileError error, bool ask
             case Score::FileError::FILE_TOO_OLD:
                   msg += QObject::tr("It was last saved with a version older than 2.0.0.\n"
                                      "You can convert this score by opening and then\n"
-                                     "saving with MuseScore version 2.x");
+                                     "saving with MuseScore version 2.x.\n"
+                                     "Visit the %1MuseScore download page%2 to obtain such a 2.x version.")
+                              .arg("<a href=\"http://musescore.org/download#older-versions\">")
+                              .arg("</a>");
                   canIgnore = true;
                   break;
             case Score::FileError::FILE_TOO_NEW:
@@ -187,10 +193,13 @@ static bool readScoreError(const QString& name, Score::FileError error, bool ask
                   msg += MScore::lastError;
                   break;
             }
-      int rv = false;
-      if (converterMode || pluginMode) {
+      if (converterMode && canIgnore && ignoreWarnings) {
+            fprintf(stderr, "%s\n\nWarning ignored, forcing score to load\n", qPrintable(msg));
+            return true;
+            }
+       if (converterMode || pluginMode) {
             fprintf(stderr, "%s\n", qPrintable(msg));
-            return rv;
+            return false;
             }
       QMessageBox msgBox;
       msgBox.setWindowTitle(QObject::tr("MuseScore: Load Error"));
@@ -211,7 +220,7 @@ static bool readScoreError(const QString& name, Score::FileError error, bool ask
                );
             msgBox.exec();
             }
-      return rv;
+      return false;
       }
 
 //---------------------------------------------------------
@@ -270,7 +279,7 @@ void MuseScore::loadFiles()
          tr("Capella Files") + " (*.cap *.capx);;" +
          tr("BB Files <experimental>") + " (*.mgu *.MGU *.sgu *.SGU);;" +
 #ifdef OMR
-         tr("PDF Files <experimental OMR>)" + " (*.pdf);;" +
+         tr("PDF Files <experimental OMR>") + " (*.pdf);;" +
 #endif
          tr("Overture / Score Writer Files <experimental>") + " (*.ove *.scw);;" +
          tr("Bagpipe Music Writer Files <experimental>") + " (*.bww);;" +
@@ -1488,7 +1497,10 @@ void MuseScore::printFile()
             return;
 
       LayoutMode layoutMode = cs->layoutMode();
-      cs->switchToPageMode();
+      if (layoutMode != LayoutMode::PAGE) {
+            cs->setLayoutMode(LayoutMode::PAGE);
+            cs->doLayout();
+            }
 
       QPainter p(&printerDev);
       p.setRenderHint(QPainter::Antialiasing, true);
@@ -1517,8 +1529,10 @@ void MuseScore::printFile()
                   }
             }
       p.end();
-      if (layoutMode != cs->layoutMode())
-            cs->endCmd(true);       // rollback
+      if (layoutMode != cs->layoutMode()) {
+            cs->setLayoutMode(layoutMode);
+            cs->doLayout();
+            }
       }
 
 //---------------------------------------------------------
@@ -1752,6 +1766,10 @@ bool MuseScore::saveAs(Score* cs, bool saveCopy, const QString& path, const QStr
             fn += suffix;
 
       LayoutMode layoutMode = cs->layoutMode();
+      if (layoutMode != LayoutMode::PAGE) {
+            cs->setLayoutMode(LayoutMode::PAGE);
+            cs->doLayout();
+            }
       if (ext == "mscx" || ext == "mscz") {
             // save as mscore *.msc[xz] file
             QFileInfo fi(fn);
@@ -1796,17 +1814,14 @@ bool MuseScore::saveAs(Score* cs, bool saveCopy, const QString& path, const QStr
             }
       else if (ext == "pdf") {
             // save as pdf file *.pdf
-            cs->switchToPageMode();
             rv = savePdf(cs, fn);
             }
       else if (ext == "png") {
             // save as png file *.png
-            cs->switchToPageMode();
             rv = savePng(cs, fn);
             }
       else if (ext == "svg") {
             // save as svg file *.svg
-            cs->switchToPageMode();
             rv = saveSvg(cs, fn);
             }
 #ifdef HAS_AUDIOFILE
@@ -1818,12 +1833,10 @@ bool MuseScore::saveAs(Score* cs, bool saveCopy, const QString& path, const QStr
             rv = saveMp3(cs, fn);
 #endif
       else if (ext == "spos") {
-            cs->switchToPageMode();
             // save positions of segments
             rv = savePositions(cs, fn, true);
             }
       else if (ext == "mpos") {
-            cs->switchToPageMode();
             // save positions of measures
             rv = savePositions(cs, fn, false);
             }
@@ -1837,8 +1850,10 @@ bool MuseScore::saveAs(Score* cs, bool saveCopy, const QString& path, const QStr
             }
       if (!rv && !MScore::noGui)
             QMessageBox::critical(this, tr("MuseScore:"), tr("Cannot write into %1").arg(fn));
-      if (layoutMode != cs->layoutMode())
-            cs->endCmd(true);       // rollback
+      if (layoutMode != cs->layoutMode()) {
+            cs->setLayoutMode(layoutMode);
+            cs->doLayout();
+            }
       return rv;
       }
 
@@ -1930,7 +1945,10 @@ bool MuseScore::savePdf(QList<Score*> cs, const QString& saveName)
       bool firstPage = true;
       for (Score* s : cs) {
             LayoutMode layoutMode = s->layoutMode();
-            s->switchToPageMode();
+            if (layoutMode != LayoutMode::PAGE) {
+                  s->setLayoutMode(LayoutMode::PAGE);
+                  s->doLayout();
+                  }
             s->setPrinting(true);
             MScore::pdfPrinting = true;
 
@@ -1949,8 +1967,10 @@ bool MuseScore::savePdf(QList<Score*> cs, const QString& saveName)
             s->setPrinting(false);
             MScore::pdfPrinting = false;
 
-            if (layoutMode != s->layoutMode())
-                  s->endCmd(true);       // rollback
+            if (layoutMode != s->layoutMode()) {
+                  s->setLayoutMode(layoutMode);
+                  s->doLayout();
+                  }
             }
       p.end();
       return true;
@@ -2388,7 +2408,7 @@ bool MuseScore::savePng(Score* score, const QString& name, bool screenshot, bool
             if (!rv)
                   break;
             }
-      cs->setPrinting(false);
+      score->setPrinting(false);
       return rv;
       }
 

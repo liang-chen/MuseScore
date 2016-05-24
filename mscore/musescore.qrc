@@ -1,11 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>data/shortcuts.xml</file>
-        <file>data/paper1.png</file>
-        <file>data/paper2.png</file>
-        <file>data/paper3.png</file>
-        <file>data/paper4.png</file>
-        <file>data/paper5.png</file>
         <file>data/icons/edit.svg</file>
         <file alias="fonts/mscore/glyphnames.json">../fonts/mscore/glyphnames.json</file>
         <file alias="fonts/mscore/metadata.json">../fonts/mscore/metadata.json</file>
@@ -13,8 +8,8 @@
         <file alias="fonts/gootville/metadata.json">../fonts/gootville/metadata.json</file>
         <file alias="fonts/bravura/glyphnames.json">../fonts/bravura/glyphnames.json</file>
         <file alias="fonts/bravura/metadata.json">../fonts/bravura/metadata.json</file>
-        <file alias="fonts/bravura/classes.json">../fonts/bravura/classes.json</file>
-        <file alias="fonts/bravura/ranges.json">../fonts/bravura/ranges.json</file>
+        <file alias="fonts/smufl/classes.json">../fonts/smufl/classes.json</file>
+        <file alias="fonts/smufl/ranges.json">../fonts/smufl/ranges.json</file>
         <file alias="fonts/fonts_tablature.xml">../fonts/fonts_tablature.xml</file>
         <file alias="fonts/fonts_figuredbass.xml">../fonts/fonts_figuredbass.xml</file>
         <file alias="data/instruments.xml">../share/instruments/instruments.xml</file>
@@ -157,5 +152,7 @@
         <file>data/icons/arrow_down.svg</file>
         <file>data/icons/arrow_up.svg</file>
         <file>data/icons/clef-bass.svg</file>
+        <file>data/solid_note_head.dat</file>
+        <file>data/icons/edit-swap.svg</file>
     </qresource>
 </RCC>

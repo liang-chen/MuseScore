@@ -211,6 +211,7 @@ class Measure : public MeasureBase {
       Segment* findSegment(Segment::Type st, int t);
 
       qreal createEndBarLines(bool);
+      void setEndBarLineType(BarLineType val, int track, bool visible = true, QColor color = QColor());
       void setStartRepeatBarLine();
 
       RepeatMeasure* cmdInsertRepeatMeasure(int staffIdx);
@@ -237,7 +238,6 @@ class Measure : public MeasureBase {
       bool empty() const;
       bool isOnlyRests(int track) const;
 
-      void layoutCR0(ChordRest* cr, qreal m, AccidentalState*);
 
       int playbackCount() const      { return _playbackCount; }
       void setPlaybackCount(int val) { _playbackCount = val; }
@@ -265,6 +265,7 @@ class Measure : public MeasureBase {
       void removeSystemTrailer();
 
       BarLineType endBarLineType() const;
+      bool endBarLineVisible() const;
       };
 
 }     // namespace Ms

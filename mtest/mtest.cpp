@@ -71,6 +71,9 @@ const char* tests[] = {
       "testoves/bdat/tst_ove_bdat",
       "musicxml/io/tst_mxml_io",                      // FAIL
 #endif
+#ifdef OMR
+      "omr/notes/tst_notes",
+#endif
       };
 
 //---------------------------------------------------------
@@ -92,7 +95,7 @@ static void process(const QString& cmd)
 //---------------------------------------------------------
 //   scanDir
 //---------------------------------------------------------
-
+#if 0
 static void scanDir(QDir d)
       {
       QFileInfoList l = d.entryInfoList(QDir::NoDotAndDotDot | QDir::Files | QDir::Dirs);
@@ -107,6 +110,7 @@ static void scanDir(QDir d)
                   }
             }
       }
+#endif
 
 //---------------------------------------------------------
 //   main

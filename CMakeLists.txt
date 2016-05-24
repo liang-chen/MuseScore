@@ -558,7 +558,7 @@ if (ZERBERUS)
 endif (ZERBERUS)
 
 if (OMR)
-      subdirs (omr)
+      subdirs (omr thirdparty/poppler)
 endif (OMR)
 
 if (OSC)
@@ -584,6 +584,11 @@ include_directories(
 #   ${FREETYPE_INCLUDE_DIRS}
    ${PROJECT_SOURCE_DIR}/thirdparty/freetype/include
 )
+
+if (OMR)
+   include_directories(${PROJECT_SOURCE_DIR}/thirdparty/poppler)
+   include_directories(${PROJECT_SOURCE_DIR}/thirdparty/poppler/poppler)
+endif (OMR)
 
 ##
 ##  Include packaging
@@ -617,4 +622,3 @@ add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/plugins
    COMMAND genManual ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR}
    DEPENDS genManual
    )
-

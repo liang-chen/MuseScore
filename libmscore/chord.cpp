@@ -596,7 +596,7 @@ qreal Chord::maxHeadWidth() const
 
 //---------------------------------------------------------
 //   createLedgerLines
-///   Creates the ledger lines fro a chord
+///   Creates the ledger lines for a chord
 ///   \arg track      track the ledger line belongs to
 ///   \arg lines      a vector of LedgerLineData describing the lines to add
 ///   \arg visible    whether the line is visible or not
@@ -622,23 +622,38 @@ void Chord::createLedgerLines(int track, vector<LedgerLineData>& vecLines, bool 
 //   addLedgerLines
 //---------------------------------------------------------
 
-void Chord::addLedgerLines(int move)
+void Chord::addLedgerLines()
       {
-      LedgerLineData    lld;
-      qreal _mag     = staff()->mag();
-      int   idx   = staffIdx() + move;
-      int   track = staff2track(idx);           // the track lines belong to
-      qreal hw    = _notes[0]->headWidth();
+      // initialize for palette
+      int track = 0;                            // the track lines belong to
       // the line pos corresponding to the bottom line of the staff
-      Staff* st = score()->staff(idx);
-      int lineBelow = (st->lines() - 1) * 2;
-      qreal lineDistance = st->lineDistance();
+      int lineBelow = 8;                        // assuming 5-lined "staff"
+      qreal lineDistance = 1;
+      qreal _mag = 1;
+      bool staffVisible = true;
+
+      if (segment()) { //not palette
+            int idx   = staffIdx() + staffMove();
+            track     = staff2track(idx);
+            Staff* st = score()->staff(idx);
+            lineBelow    = (st->lines() - 1) * 2;
+            lineDistance = st->lineDistance();
+            _mag         = staff()->mag();
+            staffVisible = !staff()->invisible();
+            }
+
+      // need ledger lines?
+      if (downLine() <= lineBelow + 1 && upLine() >= -1)
+            return;
+
+      LedgerLineData lld;
+      // the extra length of a ledger line with respect to notehead (half of it on each side)
+      qreal extraLen = score()->styleP(StyleIdx::ledgerLineLength) * _mag * 0.5;
+      qreal hw = _notes[0]->headWidth();
       qreal minX, maxX;                         // note extrema in raster units
       int   minLine, maxLine;
       bool  visible = false;
       qreal x;
-      // the extra length of a ledger line with respect to notehead (half of it on each side)
-      qreal extraLen = score()->styleP(StyleIdx::ledgerLineLength) * _mag * 0.5;
 
       // scan chord notes, collecting visibility and x and y extrema
       // NOTE: notes are sorted from bottom to top (line no. decreasing)
@@ -661,14 +676,16 @@ void Chord::addLedgerLines(int move)
                   }
             for (int i = from; i < n && i >=0 ; i += delta) {
                   const Note* note = _notes.at(i);
-
                   int l = note->physicalLine();
-                  if ( (!j && l < lineBelow) || // if 1st pass and note not below staff
-                       (j && l >= 0) )          // or 2nd pass and note not above staff
+
+                  // if 1st pass and note not below staff or 2nd pass and note not above staff
+                  if ((!j && l <= lineBelow + 1) || (j && l >= -1))
                         break;                  // stop this pass
                   // round line number to even number toward 0
-                  if (l < 0)        l = (l+1) & ~ 1;
-                  else              l = l & ~ 1;
+                  if (l < 0)
+                        l = (l + 1) & ~ 1;
+                  else
+                        l = l & ~ 1;
 
                   if (note->visible())          // if one note is visible,
                         visible = true;         // all lines between it and the staff are visible
@@ -732,11 +749,8 @@ void Chord::addLedgerLines(int move)
                         }
                   }
             if (minLine < 0 || maxLine > lineBelow)
-                  createLedgerLines(track, vecLines, !staff()->invisible());
+                  createLedgerLines(track, vecLines, staffVisible);
             }
-
-            return;                       // no ledger lines for this chord
-
       }
 
 //-----------------------------------------------------------------------------
@@ -1110,7 +1124,8 @@ void Chord::scanElements(void* data, void (*func)(void*, Element*), bool all)
             func(data, _arpeggio);
       if (_tremolo && (tremoloChordType() != TremoloChordType::TremoloSecondNote))
             func(data, _tremolo);
-      if (staff() && staff()->showLedgerLines())
+      Staff* st = staff();
+      if ((st && st->showLedgerLines()) || !st)       // also for palette
             for (LedgerLine* ll = _ledgerLines; ll; ll = ll->next())
                   func(data, ll);
       int n = _notes.size();
@@ -1254,8 +1269,7 @@ qreal Chord::defaultStemLength()
                   qreal sel = ul * .5 - normalStemLen;      // stem end vert. pos
 
                   // if stem ends above top line (with some exceptions), shorten it
-                  if (shortenStem && (sel < 0.0)
-                              && (hookIdx == 0 || tab || !downnote->mirror()))
+                  if (shortenStem && (sel < 0.0) && (hookIdx == 0 || tab || !downnote->mirror()))
                         sel -= sel  * progression.val();
                   if (sel > staffHlfHgt)                    // if stem ends below ('>') staff mid position,
                         sel = staffHlfHgt;                  // stretch it to mid position
@@ -1268,8 +1282,7 @@ qreal Chord::defaultStemLength()
                   qreal sel = dl * .5 + normalStemLen;      // stem end vert. pos.
 
                   // if stem ends below bottom line (with some exceptions), shorten it
-                  if (shortenStem && (sel > staffHeight)
-                     && (hookIdx == 0 || tab || downnote->mirror()))
+                  if (shortenStem && (sel > staffHeight) && (hookIdx == 0 || tab || downnote->mirror()))
                         sel -= (sel - staffHeight)  * progression.val();
                   if (sel < staffHlfHgt)                    // if stem ends above ('<') staff mid position,
                         sel = staffHlfHgt;                  // stretch it to mid position
@@ -1282,7 +1295,7 @@ qreal Chord::defaultStemLength()
       // adjust stem len for tremolo
       if (_tremolo && !_tremolo->twoNotes()) {
             // hook up odd lines
-            int tab[2][2][2][4] = {
+            static const int tab[2][2][2][4] = {
                   { { { 0, 0, 0,  1 },  // stem - down - even - lines
                       { 0, 0, 0,  2 }   // stem - down - odd - lines
                       },
@@ -1358,8 +1371,25 @@ void Chord::layoutStem()
       {
       for (Chord* c : _graceNotes)
             c->layoutStem();
-      if (beam())
+      if (_beam)
             return;
+
+      // create hooks for unbeamed chords
+
+      int hookIdx  = durationType().hooks();
+
+      if (hookIdx && !(noStem() || measure()->slashStyle(staffIdx()))) {
+            if (!hook()) {
+                  Hook* hook = new Hook(score());
+                  hook->setParent(this);
+                  hook->setGenerated(true);
+                  score()->undoAddElement(hook);
+                  }
+            hook()->setHookType(up() ? hookIdx : -hookIdx);
+            }
+      else if (hook())
+            score()->undoRemoveElement(hook());
+
       //
       // TAB
       //
@@ -1733,6 +1763,9 @@ void Chord::layoutPitched()
                   }
             computeUp();
             layoutStem();
+            addLedgerLines();
+            for (LedgerLine* ll = _ledgerLines; ll; ll = ll->next())
+                  ll->layout();
             return;
             }
 
@@ -1815,7 +1848,7 @@ void Chord::layoutPitched()
       //  create ledger lines
       //-----------------------------------------
 
-      addLedgerLines(staffMove());
+      addLedgerLines();
       for (LedgerLine* ll = _ledgerLines; ll; ll = ll->next())
             ll->layout();
 
@@ -2564,7 +2597,7 @@ QVariant Chord::getProperty(P_ID propertyId) const
       switch(propertyId) {
             case P_ID::NO_STEM:        return noStem();
             case P_ID::SMALL:          return small();
-            case P_ID::STEM_DIRECTION: return int(stemDirection());
+            case P_ID::STEM_DIRECTION: return stemDirection();
             default:
                   return ChordRest::getProperty(propertyId);
             }
@@ -2579,7 +2612,7 @@ QVariant Chord::propertyDefault(P_ID propertyId) const
       switch(propertyId) {
             case P_ID::NO_STEM:        return false;
             case P_ID::SMALL:          return false;
-            case P_ID::STEM_DIRECTION: return int(Direction::AUTO);
+            case P_ID::STEM_DIRECTION: return Direction(Direction::AUTO);
             default:
                   return ChordRest::propertyDefault(propertyId);
             }
@@ -2601,7 +2634,7 @@ bool Chord::setProperty(P_ID propertyId, const QVariant& v)
                   score()->setLayoutAll();
                   break;
             case P_ID::STEM_DIRECTION:
-                  setStemDirection(Direction(v.toInt()));
+                  setStemDirection(v.value<Direction>());
                   score()->setLayoutAll();
                   break;
             default:
@@ -2864,7 +2897,7 @@ QPointF Chord::layoutArticulation(Articulation* a)
 
 void Chord::reset()
       {
-      score()->undoChangeProperty(this, P_ID::STEM_DIRECTION, int(Direction::AUTO));
+      score()->undoChangeProperty(this, P_ID::STEM_DIRECTION, Direction(Direction::AUTO));
       score()->undoChangeProperty(this, P_ID::BEAM_MODE, int(Beam::Mode::AUTO));
       score()->createPlayEvents(this);
       ChordRest::reset();
@@ -2904,8 +2937,8 @@ void Chord::setSlash(bool flag, bool stemless)
                         const Drumset* ds = part()->instrument()->drumset();
                         int pitch = n->pitch();
                         if (ds && ds->isValid(pitch)) {
-                              undoChangeProperty(P_ID::STEM_DIRECTION, static_cast<int>(ds->stemDirection(pitch)));
-                              n->undoChangeProperty(P_ID::HEAD_GROUP, static_cast<int>(ds->noteHead(pitch)));
+                              undoChangeProperty(P_ID::STEM_DIRECTION, Direction(ds->stemDirection(pitch)));
+                              n->undoChangeProperty(P_ID::HEAD_GROUP, int(ds->noteHead(pitch)));
                               }
                         }
                   }
@@ -2913,7 +2946,7 @@ void Chord::setSlash(bool flag, bool stemless)
             }
 
       // set stem to auto (mostly important for rhythmic notation on drum staves)
-      undoChangeProperty(P_ID::STEM_DIRECTION, static_cast<int>(Direction::AUTO));
+      undoChangeProperty(P_ID::STEM_DIRECTION, Direction(Direction::AUTO));
 
       // make stemless if asked
       if (stemless)
