@@ -1000,6 +1000,7 @@ namespace Ms {
     {
         //place holder for note detection, doesn't work well for now if using pixel-based template matching
         //return;
+        
         for (int i = 0; i < _staves.size(); ++i) {
             OmrStaff* r = &_staves[i];
             int x1 = r->x();
@@ -1542,73 +1543,28 @@ namespace Ms {
     
     void OmrSystem::searchNotes(QList<OmrNote*>* noteList, int x1, int x2, int y, int line)
     {
+        //a simple and cheap note detector (heuristic approach)
         double _spatium = _page->spatium();
         y += line * _spatium * .5;
         
-        //Pattern* patternList[2];
-        //patternList[0] = Omr::quartheadPattern;
-        //patternList[1] = Omr::halfheadPattern;
-        
-        Pattern* pattern = Omr::quartheadPattern;
-        
         QList<Peak> notePeaks;
-        
+        Pattern* pattern = Omr::quartheadPattern;
         int hh = pattern->h();
         int hw = pattern->w();
-        bool found = false;
-        int xx1;
         double val;
+        int step_size = 2;
+        int note_thresh = 75;
         
-        for (int x = x1; x < (x2 - hw); ++x) {
-            double val1 = pattern->match(&_page->image(), x, y - hh/2, _page->ratio());
-            if (val1 >= noteTH) {
-                if (!found || (val1 > val)) {
-                    xx1 = x;
-                    val = val1;
-                    found = true;
-                }
-            }
-            else {
-                if (found) {
-                    notePeaks.append(Peak(xx1, val, 0));
-                    found = false;
-                }
+        for (int x = x1; x < (x2 - hw); x += step_size) {
+            val = pattern->match(&_page->image(), x, y - hh/2, _page->ratio());
+            if (val >= note_thresh) {
+                notePeaks.append(Peak(x, val, 0));
             }
         }
-        
-        //        for (int k = 0; k < 2; ++k) {
-        //            Pattern* pattern = patternList[k];
-        //            int hh = pattern->h();
-        //            int hw = pattern->w();
-        //            bool found = false;
-        //            int xx1;
-        //            double val;
-        //
-        //            for (int x = x1; x < (x2 - hw); ++x) {
-        //                double val1 = pattern->match(&_page->image(), x, y - hh/2);
-        //                if (val1 >= noteTH) {
-        //                    if (!found || (val1 > val)) {
-        //                        xx1 = x;
-        //                        val = val1;
-        //                        found = true;
-        //                    }
-        //                }
-        //                else {
-        //                    if (found) {
-        //                        notePeaks.append(Peak(xx1, val, k));
-        //                        found = false;
-        //                    }
-        //                }
-        //            }
-        //        }
-        
-        qSort(notePeaks);
+    
         int n = notePeaks.size();
         for (int i = 0; i < n; ++i) {
-            if (notePeaks[i].val < noteTH)
-                break;
             OmrNote* note = new OmrNote;
-            //int sym = notePeaks[i].sym;
             int hh = pattern->h();
             int hw = pattern->w();
             note->setRect(notePeaks[i].x, y - hh/2, hw, hh);
@@ -1617,6 +1573,60 @@ namespace Ms {
             note->prob = notePeaks[i].val;
             noteList->append(note);
         }
+        
+        return;
+        
+        
+        
+//        double _spatium = _page->spatium();
+//        y += line * _spatium * .5;
+//        
+//        //Pattern* patternList[2];
+//        //patternList[0] = Omr::quartheadPattern;
+//        //patternList[1] = Omr::halfheadPattern;
+//        
+//        Pattern* pattern = Omr::quartheadPattern;
+//        
+//        QList<Peak> notePeaks;
+//        
+//        int hh = pattern->h();
+//        int hw = pattern->w();
+//        bool found = false;
+//        int xx1;
+//        double val;
+//        
+//        for (int x = x1; x < (x2 - hw); ++x) {
+//            double val1 = pattern->match(&_page->image(), x, y - hh/2, _page->ratio());
+//            if (val1 >= noteTH) {
+//                if (!found || (val1 > val)) {
+//                    xx1 = x;
+//                    val = val1;
+//                    found = true;
+//                }
+//            }
+//            else {
+//                if (found) {
+//                    notePeaks.append(Peak(xx1, val, 0));
+//                    found = false;
+//                }
+//            }
+//        }
+//        
+//        qSort(notePeaks);
+//        int n = notePeaks.size();
+//        for (int i = 0; i < n; ++i) {
+//            if (notePeaks[i].val < noteTH)
+//                break;
+//            OmrNote* note = new OmrNote;
+//            //int sym = notePeaks[i].sym;
+//            int hh = pattern->h();
+//            int hw = pattern->w();
+//            note->setRect(notePeaks[i].x, y - hh/2, hw, hh);
+//            note->line = line;
+//            note->sym  = pattern->id();
+//            note->prob = notePeaks[i].val;
+//            noteList->append(note);
+//        }
     }
     
     //---------------------------------------------------------
