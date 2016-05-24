@@ -37,6 +37,7 @@
 #include "libmscore/utils.h"
 #include "libmscore/timesig.h"
 #include "libmscore/keysig.h"
+#include "libmscore/spacer.h"
 
 namespace Ms {
 
@@ -50,7 +51,7 @@ class OmrState {
       Fraction timesig { 4, 4};
       int tick = 0;
 
-      void importPdfPage(OmrPage* omrPage);
+      void importPdfPage(OmrPage* omrPage, int top);
       int importPdfSystem(OmrSystem* omrSystem);
       void importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem);
       };
@@ -165,64 +166,92 @@ void OmrState::importPdfMeasure(OmrMeasure* m, const OmrSystem* omrSystem)
 
 int OmrState::importPdfSystem(OmrSystem* omrSystem)
       {
-      for (int i = 0; i < omrSystem->measures().size(); ++i) {
-            OmrMeasure* m = &omrSystem->measures()[i];
-            importPdfMeasure(m, omrSystem);
-            }
-      LayoutBreak* b = new LayoutBreak(score);
-      b->setLayoutBreakType(LayoutBreak::Type::LINE);
-      score->lastMeasure()->add(b);
-      return tick;
+          for (int i = 0; i < omrSystem->measures().size(); ++i) {
+              OmrMeasure* m = &omrSystem->measures()[i];
+              importPdfMeasure(m, omrSystem);
+          }
+          
+          
+          if(score->lastMeasure()){
+              LayoutBreak* b = new LayoutBreak(score);
+              b->setLayoutBreakType(LayoutBreak::Type::LINE);
+              score->lastMeasure()->add(b);
+          }
+          
+          return tick;
       }
 
 //---------------------------------------------------------
 //   importPdfPage
 //---------------------------------------------------------
 
-void OmrState::importPdfPage(OmrPage* omrPage)
+void OmrState::importPdfPage(OmrPage* omrPage, int top)
       {
-      TDuration d(TDuration::DurationType::V_MEASURE);
-      int tick         = 0;
-
-      int nsystems = omrPage->systems().size();
-      int n = nsystems == 0 ? 1 : nsystems;
-      for (int k = 0; k < n; ++k) {
-            int numMeasures = 1;
-            if (k < nsystems) {
+          TDuration d(TDuration::DurationType::V_MEASURE);
+          int tick         = 0;
+          
+          int nsystems = omrPage->systems().size();
+          if(nsystems == 0) return;
+          
+          //int n = nsystems == 0 ? 1 : nsystems;
+          for (int k = 0; k < nsystems; ++k) {
+              int numMeasures = 1;
+              if (k < nsystems) {
                   tick = importPdfSystem(omrPage->system(k));
-                  }
-            else {
+              }
+              else {
                   Measure* measure;
                   for (int i = 0; i < numMeasures; ++i) {
-                        measure = new Measure(score);
-                        measure->setTick(tick);
-
-                        Rest* rest = new Rest(score, d);
-                        rest->setDuration(Fraction(4,4));
-                        rest->setTrack(0);
-                        Segment* s = measure->getSegment(Segment::Type::ChordRest, tick);
-                        s->add(rest);
-                        rest = new Rest(score, d);
-                        rest->setDuration(Fraction(4,4));
-                        rest->setTrack(4);
-                        s->add(rest);
-                        score->measures()->add(measure);
-                        tick += MScore::division * 4;
-                        }
-                  if (k < (nsystems-1)) {
-                        LayoutBreak* b = new LayoutBreak(score);
-                      b->setLayoutBreakType(LayoutBreak::Type::LINE);
-                        measure->add(b);
-                        }
+                      measure = new Measure(score);
+                      measure->setTick(tick);
+                      
+                      Rest* rest = new Rest(score, d);
+                      rest->setDuration(Fraction(4,4));
+                      rest->setTrack(0);
+                      Segment* s = measure->getSegment(Segment::Type::ChordRest, tick);
+                      s->add(rest);
+                      rest = new Rest(score, d);
+                      rest->setDuration(Fraction(4,4));
+                      rest->setTrack(4);
+                      s->add(rest);
+                      score->measures()->add(measure);
+                      tick += MScore::division * 4;
                   }
-            }
-      Measure* measure = score->lastMeasure();
-      if (measure) {
-            LayoutBreak* b = new LayoutBreak(score);
-            b->setLayoutBreakType(LayoutBreak::Type::LINE);
-            measure->add(b);
-            }
+                  if (k < (nsystems-1)) {
+                      LayoutBreak* b = new LayoutBreak(score);
+                      b->setLayoutBreakType(LayoutBreak::Type::LINE);
+                      measure->add(b);
+                  }
+              }
+          }
+          
+          
+          Measure* measure = score->lastMeasure();
+          if (measure) {
+              LayoutBreak* b = new LayoutBreak(score);
+              b->setLayoutBreakType(LayoutBreak::Type::PAGE);
+              measure->add(b);
+          }
+          
+          measure = score->firstMeasure();
+          if(measure){
+              MStaff *ms = measure->mstaves()[0];
+              
+              if (!ms->_vspacerUp){
+                  Spacer* spacer = new Spacer(score);
+                  spacer->setSpacerType(SpacerType::UP);
+                  spacer->setTrack(0);
+                  measure->add(spacer);
+              }
+              Spacer* sp = ms->_vspacerUp;
+              sp->layout();
+              sp->setPos(sp->rxpos(), top);
+              
+          }
+          
       }
+    
+    
 
 //---------------------------------------------------------
 //   importPdf
@@ -262,7 +291,8 @@ Score::FileError importPdf(MasterScore* score, const QString& path)
       //incomplete implementation for musescore skeletion creation
       Part* part   = new Part(score);
       OmrPage* omrPage = omr->pages().front();
-
+      
+      //may need to identify maximal number of staff per system and then high some of those
       if(omrPage->systems().size() > 0){
               for (int i = 0; i < omrPage->systems().front().staves().size(); i++) {
                   Staff* staff = new Staff(score);
@@ -275,8 +305,11 @@ Score::FileError importPdf(MasterScore* score, const QString& path)
 
       OmrState state;
       state.score = score;
-      foreach(OmrPage* omrPage, omr->pages())
-            state.importPdfPage(omrPage);
+          foreach(OmrPage* omrPage, omr->pages()){
+              OmrStaff staff = omrPage->systems().last().staves().first();
+              int top = staff.top();
+            state.importPdfPage(omrPage, top);
+          }
 
       //---create bracket
 
