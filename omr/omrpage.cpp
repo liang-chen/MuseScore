@@ -278,20 +278,22 @@ void OmrPage::identifySystems()
       //
       int **note_labels = new int*[numStaves];
       for (int i = 0; i < numStaves; i++)
-            note_labels[i] = new int[wordsPerLine()];
+            note_labels[i] = new int[width()];
       for (int i = 0; i < numStaves; i++){
-            for (int j = 0; j < wordsPerLine(); j++){
+            for (int j = 0; j < width(); j++){
                   note_labels[i][j] = 0;
                   }
             }
-      
-      int note_ran = spatium()*2;
+      int note_ran = spatium()/4.0;
       for (int i = 0; i < numStaves; i++){
             OmrSystem omrSystem(this);
             omrSystem.staves().append(staves[i]);
             omrSystem.searchNotes(note_labels[i], note_ran);
             }
-
+      
+      //
+      // System Identification
+      //
       int status;
       float cur_score;
       int cur_staff,next_staff;
@@ -307,7 +309,8 @@ void OmrPage::identifySystems()
                         for (int i = cur_staff; i <= next_staff; ++i) {
                               omrSystem.staves().append(staves[i]);
                               }
-                        cur_score = omrSystem.searchBarLinesvar(next_staff - cur_staff + 1 /*, bar_score_vector*/);
+                        
+                        cur_score = omrSystem.searchBarLinesvar(next_staff - cur_staff + 1, note_labels + cur_staff);
                         temp_scores[cur_staff][next_staff] = cur_score;
                         hashed[cur_staff][next_staff] = 1;
                         }
@@ -344,7 +347,7 @@ void OmrPage::identifySystems()
                   for (int i = ss.index; i <= cur_staff; ++i) {
                         omrSystem.staves().append(staves[i]);
                         }
-                  omrSystem.searchBarLinesvar(cur_staff - ss.index + 1 /*, bar_score_vector*/);
+                  omrSystem.searchBarLinesvar(cur_staff - ss.index + 1, note_labels + ss.index);
                   _systems.append(omrSystem);
                   }
             cur_staff = ss.index;
@@ -369,8 +372,10 @@ void OmrPage::identifySystems()
             delete[] pred[i];
             delete[] temp_scores[i];
             delete[] hashed[i];
+            delete[] note_labels[i];
             }
-
+      
+      delete[] note_labels;
       delete[] scores;
       delete[] pred;
       delete[] temp_scores;
@@ -756,7 +761,7 @@ void OmrSystem::searchSysBarLines()
 //-------------------------------------------------------------------
 //   searchBarLinesvar: dynamic programming for system identification
 //-------------------------------------------------------------------
-float OmrSystem::searchBarLinesvar(int n_staff /*, float *bar_score_vector*/)
+float OmrSystem::searchBarLinesvar(int n_staff, int **note_labels)
       {
       OmrStaff& r1 = _staves[0];
       OmrStaff& r2 = _staves[n_staff - 1];
@@ -771,16 +776,12 @@ float OmrSystem::searchBarLinesvar(int n_staff /*, float *bar_score_vector*/)
       //
       //compute note constraints
       //
-      //searchNotes();
-
       int *note_constraints = new int[x2 - x1 + 1];
       memset(note_constraints, 0, sizeof(int) * (x2 - x1 + 1));
       for (int i = 0; i < n_staff; ++i) {
-            OmrStaff& r = _staves[i];
-            foreach (OmrNote* n, r.notes()) {
-                  for (int x = n->x(); x <= n->x() + n->width(); ++x) {
-                        if(x >= x1 && x <= x2) note_constraints[x - x1] = 1;
-                        }
+            for (int j = x1; j <= x2; ++j) {
+                  if (note_labels[i][j] == 1)
+                        note_constraints[j - x1] = 1;
                   }
             }
 
@@ -1515,7 +1516,7 @@ void OmrSystem::searchNotes(QList<OmrNote*>* noteList, int x1, int x2, int y, in
       int hw = pattern->w();
       double val;
       int step_size = 2;
-      int note_thresh = 0;
+      int note_thresh = 20;
 
       for (int x = x1; x < (x2 - hw); x += step_size) {
             val = pattern->match(&_page->image(), x, y - hh / 2, _page->ratio());

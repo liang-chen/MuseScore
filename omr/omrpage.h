@@ -176,7 +176,7 @@ class OmrSystem {
       QList<QLine> barLines;
 
       void searchSysBarLines();
-      float searchBarLinesvar(int n_staff/*, float *bar_score_vector*/);
+      float searchBarLinesvar(int n_staff, int **note_labels);
       void searchNotes();
       void searchNotes(int *note_labels, int ran);
       };

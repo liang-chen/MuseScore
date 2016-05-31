@@ -22,6 +22,7 @@
 #include "utils.h"
 #include "libmscore/sym.h"
 #include "omr.h"
+#include <math.h>
 
 namespace Ms {
 
@@ -87,10 +88,15 @@ double Pattern::match(const QImage* img, int col, int row, double bg_parm) const
       return scr;
 #endif
       double k = 0;
-      if (bg_parm <= 0)
-            bg_parm = 1e-10;
-      if (bg_parm >= 1)
-            bg_parm = 1-1e-10;
+      
+      //return k;
+      if (bg_parm < 0.00001)
+            bg_parm = 0.00001;
+      if (bg_parm > 0.99999)
+            bg_parm = 0.99999;
+            
+      double log_bg_black = log(bg_parm);
+      double log_bg_white = log(1.0-bg_parm);
       
       for (int y = 0; y < rows; ++y) {
             for (int x = 0; x < cols; x++) {
@@ -98,7 +104,18 @@ double Pattern::match(const QImage* img, int col, int row, double bg_parm) const
                         continue;
                   QRgb c = img->pixel(col+x, row+y);
                   bool black = (qGray(c) < 125);
-                  k += black?(log(model[y][x]) - log(bg_parm)):(log(1.0 - model[y][x]) - log(1-bg_parm));
+
+                  double bs_scr = model[y][x];
+                  if (bs_scr < 0.00001)
+                        bs_scr = 0.00001;
+                  if (bs_scr > 0.99999)
+                        bs_scr = 0.99999;
+                  
+                  double log_black = log(bs_scr) - log_bg_black;
+                  double log_white = log(1.0 - bs_scr) - log_bg_white;
+                  
+                  k += black?log_black:log_white;
+                  
                   }
             }
       return k;
