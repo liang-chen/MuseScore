@@ -178,6 +178,7 @@ class OmrSystem {
       void searchSysBarLines();
       float searchBarLinesvar(int n_staff/*, float *bar_score_vector*/);
       void searchNotes();
+      void searchNotes(int *note_labels, int ran);
       };
 
 //---------------------------------------------------------

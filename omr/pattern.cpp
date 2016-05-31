@@ -72,8 +72,9 @@ double Pattern::match(const QImage*, int , int) const
     return 0.0;
     }
 
-double Pattern::match(const QImage* img, int col, int row, double /*bg_parm*/) const
+double Pattern::match(const QImage* img, int col, int row, double bg_parm) const
       {
+#if 0
       double scr = 0;
       for (int y = 0; y < rows; ++y) {
             for (int x = 0; x < cols; x++) {
@@ -83,32 +84,21 @@ double Pattern::match(const QImage* img, int col, int row, double /*bg_parm*/) c
                   scr += black ? 1 : 0;
                   }
             }
-
-#if 0
-          double k = 0;
-          if(bg_parm == 0) bg_parm = 1e-10;
-          if(bg_parm == 1) bg_parm = 1-1e-10;
-          
-
+      return scr;
+#endif
+      double k = 0;
+      if(bg_parm == 0) bg_parm = 1e-10;
+      if(bg_parm == 1) bg_parm = 1-1e-10;
+      
       for (int y = 0; y < rows; ++y) {
-            //const uchar* p1 = image()->scanLine(y);
-            //const uchar* p2 = img->scanLine(row + y) + (col/8);
-
-
-
           for(int x = 0; x < cols; x++){
-              //const uchar* p = img->scanLine(row + y) + ((col+x) / 32);
-              //bool black = (*p) & (0x1 << ((col+x) % 32));
               if(col+x >= img->size().width() || row+y >= img->size().height()) continue;
               QRgb c = img->pixel(col+x, row+y);
-              bool black = (qGray(c) < 100);
-              //if(black)
-                  //printf("here");
+              bool black = (qGray(c) < 125);
               k += black?(log(model[y][x]) - log(bg_parm)):(log(1.0 - model[y][x]) - log(1-bg_parm));
           }
       }
-          return k;
-#endif
+      return k;
 #if 0
             for (int x = 0; x < bytes; ++x) {
                   uchar a = *p1++;
@@ -128,7 +118,7 @@ double Pattern::match(const QImage* img, int col, int row, double /*bg_parm*/) c
             }
 #endif
 
-      return scr;
+      
       }
 
 //---------------------------------------------------------
