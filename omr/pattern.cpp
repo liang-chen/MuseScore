@@ -87,35 +87,38 @@ double Pattern::match(const QImage* img, int col, int row, double bg_parm) const
       return scr;
 #endif
       double k = 0;
-      if(bg_parm == 0) bg_parm = 1e-10;
-      if(bg_parm == 1) bg_parm = 1-1e-10;
+      if (bg_parm <= 0)
+            bg_parm = 1e-10;
+      if (bg_parm >= 1)
+            bg_parm = 1-1e-10;
       
       for (int y = 0; y < rows; ++y) {
-          for(int x = 0; x < cols; x++){
-              if(col+x >= img->size().width() || row+y >= img->size().height()) continue;
-              QRgb c = img->pixel(col+x, row+y);
-              bool black = (qGray(c) < 125);
-              k += black?(log(model[y][x]) - log(bg_parm)):(log(1.0 - model[y][x]) - log(1-bg_parm));
-          }
-      }
+            for (int x = 0; x < cols; x++) {
+                  if (col+x >= img->size().width() || row+y >= img->size().height())
+                        continue;
+                  QRgb c = img->pixel(col+x, row+y);
+                  bool black = (qGray(c) < 125);
+                  k += black?(log(model[y][x]) - log(bg_parm)):(log(1.0 - model[y][x]) - log(1-bg_parm));
+                  }
+            }
       return k;
 #if 0
-            for (int x = 0; x < bytes; ++x) {
-                  uchar a = *p1++;
-                  uchar b1 = *p2;
-                  uchar b2 = *(p2 + 1);
-                  p2++;
-                  uchar b  = (b1 >> shift) | (b2 << (7 - shift));
-                  uchar v = a ^ b;
-                  k += Omr::bitsSetTable[v];
-                  }
+      for (int x = 0; x < bytes; ++x) {
             uchar a = *p1++;
             uchar b1 = *p2;
-            uchar b2 = *(p2 + 1) & (0xff << eshift);
+            uchar b2 = *(p2 + 1);
+            p2++;
             uchar b  = (b1 >> shift) | (b2 << (7 - shift));
             uchar v = a ^ b;
             k += Omr::bitsSetTable[v];
             }
+      uchar a = *p1++;
+      uchar b1 = *p2;
+      uchar b2 = *(p2 + 1) & (0xff << eshift);
+      uchar b  = (b1 >> shift) | (b2 << (7 - shift));
+      uchar v = a ^ b;
+      k += Omr::bitsSetTable[v];
+      }
 #endif
 
       

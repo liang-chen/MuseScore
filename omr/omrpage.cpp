@@ -276,21 +276,21 @@ void OmrPage::identifySystems()
       //
       //identify solid note heads
       //
-//      int **note_labels = new int*[numStaves];
-//      for (int i = 0; i < numStaves; i++)
-//            note_labels[i] = new int[wordsPerLine()];
-//      for (int i = 0; i < numStaves; i++){
-//            for (int j = 0; j < wordsPerLine(); j++){
-//                  note_labels[i][j] = 0;
-//                  }
-//            }
-//      
-//      int note_ran = spatium()*2;
-//      for (int i = 0; i < numStaves; i++){
-//            OmrSystem omrSystem(this);
-//            omrSystem.staves().append(staves[i]);
-//            omrSystem.searchNotes(note_labels[i], note_ran);
-//            }
+      int **note_labels = new int*[numStaves];
+      for (int i = 0; i < numStaves; i++)
+            note_labels[i] = new int[wordsPerLine()];
+      for (int i = 0; i < numStaves; i++){
+            for (int j = 0; j < wordsPerLine(); j++){
+                  note_labels[i][j] = 0;
+                  }
+            }
+      
+      int note_ran = spatium()*2;
+      for (int i = 0; i < numStaves; i++){
+            OmrSystem omrSystem(this);
+            omrSystem.staves().append(staves[i]);
+            omrSystem.searchNotes(note_labels[i], note_ran);
+            }
 
       int status;
       float cur_score;
