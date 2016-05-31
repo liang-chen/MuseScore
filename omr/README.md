@@ -43,7 +43,5 @@ If S(I(i,j)) is larger than 0, we say at position (i,j) there's a symbols candid
 
 ###Todo
 
-	~~Add pagebreak to generated skeleton~~
-	~~Align skeleton to OMR~~
 	Fix pdf reading for vector graphs
 	Optimize OMR performance and add clef/key recognitions
