@@ -932,9 +932,6 @@ static bool intersectFuzz(const QRect& a, const QRect& b, int fuzz)
 
 void OmrSystem::searchNotes()
       {
-      //place holder for note detection, doesn't work well for now if using pixel-based template matching
-      //return;
-
       for (int i = 0; i < _staves.size(); ++i) {
             OmrStaff* r = &_staves[i];
             int x1 = r->x();
@@ -943,7 +940,7 @@ void OmrSystem::searchNotes()
             //
             // search notes on a range of vertical line position
             //
-            for (int line = -5; line < 14; ++line)
+            for (int line = 0; line < 8; ++line)
                   searchNotes(&r->notes(), x1, x2, r->y(), line);
 
             //
@@ -1516,7 +1513,7 @@ void OmrSystem::searchNotes(QList<OmrNote*>* noteList, int x1, int x2, int y, in
       int hw = pattern->w();
       double val;
       int step_size = 2;
-      int note_thresh = 20;
+      int note_thresh = 50;
 
       for (int x = x1; x < (x2 - hw); x += step_size) {
             val = pattern->match(&_page->image(), x, y - hh / 2, _page->ratio());
