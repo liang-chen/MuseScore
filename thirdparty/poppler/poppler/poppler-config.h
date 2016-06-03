@@ -34,7 +34,7 @@
 
 /* Defines the poppler version. */
 #ifndef POPPLER_VERSION
-#define POPPLER_VERSION "0.40.0"
+#define POPPLER_VERSION "0.44.0"
 #endif
 
 /* Enable multithreading support. */
@@ -82,9 +82,9 @@
 #define ENABLE_LIBPNG 1
 #endif
 
-/* Use zlib instead of builtin zlib decoder. */
-#ifndef ENABLE_ZLIB
-/* #undef ENABLE_ZLIB */
+/* Use zlib instead of builtin zlib decoder for uncompressing flate streams. */
+#ifndef ENABLE_ZLIB_UNCOMPRESS
+/* #undef ENABLE_ZLIB_UNCOMPRESS */
 #endif
 
 /* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
@@ -121,9 +121,9 @@
 #endif
 
 /* Defines if use cms */
-//#ifndef USE_CMS
-//#define USE_CMS 1
-//#endif
+#ifndef USE_CMS
+#define USE_CMS 1
+#endif
 
 // Also, there are preprocessor symbols in the header files
 // that are used but never defined when building poppler using configure
@@ -135,7 +135,7 @@
 //------------------------------------------------------------------------
 
 // copyright notice
-#define popplerCopyright "Copyright 2005-2015 The Poppler Developers - http://poppler.freedesktop.org"
+#define popplerCopyright "Copyright 2005-2016 The Poppler Developers - http://poppler.freedesktop.org"
 #define xpdfCopyright "Copyright 1996-2011 Glyph & Cog, LLC"
 
 //------------------------------------------------------------------------
