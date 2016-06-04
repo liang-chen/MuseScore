@@ -136,7 +136,7 @@
 /* #undef HAVE_SYS_DIR_H */
 
 /* Define to 1 if you have the <sys/mman.h> header file. */
-/*#undef HAVE_SYS_MMAN_H 1*/
+/* #undef HAVE_SYS_MMAN_H */
 
 /* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.
    */
@@ -213,7 +213,7 @@
 #define TEXTOUT_WORD_LIST 1
 
 /* Defines if use cms */
-/*#undefine USE_CMS*/
+/* #undef USE_CMS */
 
 /* Use fixed point arithmetic in the Splash backend */
 /* #undef USE_FIXEDPOINT */
@@ -234,7 +234,7 @@
 #define VERSION "0.44.0"
 
 /* Use fontconfig font configuration backend */
-/*#undefine WITH_FONTCONFIGURATION_FONTCONFIG 1*/
+/* #undef WITH_FONTCONFIGURATION_FONTCONFIG */
 
 /* Use win32 font configuration backend */
 /* #undef WITH_FONTCONFIGURATION_WIN32 */
