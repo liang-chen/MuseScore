@@ -147,7 +147,7 @@ set_target_properties(poppler
       )
 
 include_directories(
-      ${PROJECT_SOURCE_DIR}/thirdparty/poppler/goo
+        ${PROJECT_SOURCE_DIR}/thirdparty/poppler/goo
 	${PROJECT_SOURCE_DIR}/thirdparty/poppler/fofi
 	${PROJECT_SOURCE_DIR}/thirdparty/poppler/splash
 	${PROJECT_SOURCE_DIR}/thirdparty/poppler/qt5/src

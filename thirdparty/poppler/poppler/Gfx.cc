@@ -643,7 +643,7 @@ Gfx::Gfx(PDFDoc *docA, OutputDev *outA, Dict *resDict,
 }
 
 #ifdef USE_CMS
-
+#undef USE_CMS
 #ifdef USE_LCMS1
 #include <lcms.h>
 #else
