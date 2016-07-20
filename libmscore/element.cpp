@@ -1738,19 +1738,12 @@ void Element::scriptSetUserOff(const QPointF& o)
 
 void Element::drawSymbol(SymId id, QPainter* p, const QPointF& o) const
       {
-      
       score()->scoreFont()->draw(id, p, magS(), o);
-      FILE *file = fopen("/Users/Hipapa/Projects/Git/MuseScore/test.nsym", "a");
-      fprintf(file, "%s\n", score()->scoreFont()->toString(id).toUtf8().constData());
-      fclose(file);
       }
 
 void Element::drawSymbol(SymId id, QPainter* p, const QPointF& o, int n) const
       {
       score()->scoreFont()->draw(id, p, magS(), o, n);
-      FILE *file = fopen("/Users/Hipapa/Projects/Git/MuseScore/test.nsym", "a");
-      fprintf(file, "%s\n", score()->scoreFont()->toString(id).toUtf8().constData());
-      fclose(file);
       }
 
 void Element::drawSymbols(const std::vector<SymId>& s, QPainter* p, const QPointF& o) const

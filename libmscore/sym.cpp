@@ -2667,6 +2667,7 @@ QVector<const char*> Sym::symNames = {
       "noteLongaSquareDown",
       "space"
       };
+      
 
 QVector<QString> Sym::symUserNames = {
       "noSym",
@@ -5624,7 +5625,20 @@ void ScoreFont::draw(SymId id, QPainter* painter, qreal mag, const QPointF& pos,
             painter->scale(mag, mag);
             painter->setFont(*font);
             painter->drawText(pos * imag, toString(id));
+            
+            const QMatrix m = painter->worldMatrix();
+            QPointF new_pos = m.map(pos * imag);
+            QString filename="/Users/Hipapa/Projects/Git/MuseScore/test.nsym";
+            QFile file( filename );
+            if ( file.open( QIODevice::Append) )
+            {
+                  QTextStream stream( &file );
+                  stream << Sym::symNames[int(id)] << endl <<new_pos.y() <<"\t"<< new_pos.x() << endl;
+                  }
+            file.close();
+            
             painter->scale(imag, imag);
+            
             return;
             }
 
