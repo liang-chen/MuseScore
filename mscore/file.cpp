@@ -2521,6 +2521,8 @@ QString MuseScore::getWallpaper(const QString& caption)
 //
 bool MuseScore::saveSvg(Score* score, const QString& saveName)
 {
+      QString filename= QDir::homePath() + "/test.nsym";
+      QFile::remove(filename);
     SvgGenerator printer;
 
       QString title(score->title());
