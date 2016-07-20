@@ -153,6 +153,19 @@ void Stem::draw(QPainter* painter) const
       qreal lw = lineWidth();
       painter->setPen(QPen(curColor(), lw, Qt::SolidLine, Qt::RoundCap));
       painter->drawLine(line);
+      
+      const QMatrix m = painter->worldMatrix();
+      QLineF new_line = m.map(line);
+      
+      QString filename= QDir::homePath() + "/test.nsym";
+      QFile file( filename );
+      if ( file.open( QIODevice::Append) )
+      {
+            QTextStream stream( &file );
+            stream << "stem" << endl << new_line.y1() <<"\t"<< new_line.x1() << "\t"
+                             << new_line.y2() <<"\t"<< new_line.x2() << endl;
+            }
+      file.close();
 
       if ( !(useTab && chord()) )
             return;
