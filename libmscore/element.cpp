@@ -900,10 +900,27 @@ void StaffLines::draw(QPainter* painter) const
 
       QVector<QLineF> ll(lines);
       qreal y = _pos.y();
+      
+      const QMatrix m = painter->worldMatrix();
+      
+      QString filename= QDir::homePath() + "/test.nsym";
+      QFile file( filename );
+      bool fo = file.open( QIODevice::Append);
+      
       for (int i = 0; i < lines; ++i) {
             ll[i].setLine(x1, y, x2, y);
+            
+            if(fo){
+                  QPointF left = m.map(QPointF(x1, y));
+                  QPointF rite = m.map(QPointF(x2, y));
+                  QTextStream stream( &file );
+                  stream << "staff" << endl << left.y() <<"\t"<< left.x() << "\t"
+                        << rite.y() <<"\t" << rite.x() << endl;
+                  }
+            
             y += dist;
             }
+      file.close();
       if (MScore::debugMode) {
             painter->setPen(QPen(Qt::lightGray, lw, Qt::SolidLine, Qt::FlatCap));
             y = _pos.y() - 3 * dist;

@@ -2523,7 +2523,8 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
 {
       QString filename= QDir::homePath() + "/test.nsym";
       QFile::remove(filename);
-    SvgGenerator printer;
+      
+      SvgGenerator printer;
 
       QString title(score->title());
       printer.setTitle(title);
