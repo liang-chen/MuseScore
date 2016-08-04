@@ -27,6 +27,7 @@
 #include "mscore/scoreview.h"
 #include "libmscore/sym.h"
 #include "libmscore/mscore.h"
+#include "omr/importpdf.h"
 
 namespace Ms {
 
@@ -268,6 +269,35 @@ void OmrView::paintEvent(QPaintEvent* event)
 void OmrView::mousePressEvent(QMouseEvent* e)
       {
       startDrag = e->pos();
+      
+      QPoint p = _matrix.inverted().map(startDrag);
+      
+      bool omr_updated = false;
+      for (int pageNo = 0; pageNo < _omr->numPages(); ++pageNo) {
+            OmrPage* page = _omr->page(pageNo);
+            for (int i = 0; i < page->systems().size(); i++) {
+                  OmrSystem* sys = page->system(i);
+                  int index = 0;
+                  while(index < sys->barLines.size()){
+                        QLineF l = sys->barLines.at(index);
+                        if(p.x() >= l.x1() && p.x() < l.x1() + 10 && \
+                              p.y() >= l.y1() && p.y() < l.y2()){
+                              sys->barLines.removeAt(index);
+                              omr_updated = true;
+                              }
+                        else{
+                              index++;
+                              }
+                        }
+                  }
+            }
+            
+      update();
+      
+      if (omr_updated) {
+            updateOmrScore(_scoreView->score()->masterScore());
+            _scoreView->update();
+            }
       }
 
 //---------------------------------------------------------

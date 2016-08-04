@@ -1970,7 +1970,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                                           }
                                     }
                               }
-                        if (MScore::showCorruptedMeasures) {
+                        if (MScore::showCorruptedMeasures && false) {
                               double _spatium = score()->spatium();
                               QPen pen;
                               pen.setColor(Qt::red);

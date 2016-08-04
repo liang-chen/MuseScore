@@ -56,7 +56,7 @@ class Omr {
 
 
       enum ActionID { READ_PDF, INIT_PAGE, FINALIZE_PARMS, SYSTEM_IDENTIFICATION, ACTION_NUM};
-      QList<QString>ActionNames;
+      QList<QString> ActionNames;
 
 public:
       Omr(Score*);

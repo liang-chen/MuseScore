@@ -204,7 +204,7 @@ void OmrState::importPdfPage(OmrPage* omrPage, qreal top)
             vbox->setBottomMargin(0);
             vbox->setBottomGap(0);
             score->measures()->add(vbox);
-      }
+            }
       
       for (int k = 0; k < nsystems; ++k) {
             importPdfSystem(omrPage->system(nsystems - k - 1));
@@ -300,5 +300,39 @@ Score::FileError importPdf(MasterScore* score, const QString& path)
       score->rebuildMidiMapping();
       return Score::FileError::FILE_NO_ERROR;
       }
+      
+void updateOmrScore(MasterScore* score)
+      {
+      Omr* omr = score->omr();
+      score->parts().clear();
+      score->measures()->clear();
+//      Part* part   = new Part(score);
+//      OmrPage* omrPage = omr->pages().front();
+//      
+//      if (omrPage->systems().size() > 0) {
+//            for (int i = 0; i < omrPage->systems().front().staves().size(); i++) {
+//                  Staff* staff = new Staff(score);
+//                  staff->setPart(part);
+//                  part->insertStaff(staff, -1);
+//                  score->staves().append(staff);
+//                  }
+//            }
+//      score->appendPart(part);
+//
+//      OmrState state;
+//      state.score = score;
+//      foreach (OmrPage* omrPage, omr->pages()) {
+//            OmrStaff staff = omrPage->systems().last().staves().first();
+//            qreal top = staff.top()/omr->spatium();
+//            state.importPdfPage(omrPage, top);
+//            }
+//
+//      score->setShowOmr(true);
+//      omr->page(0)->readHeader(score);
+//      score->rebuildMidiMapping();
+      }
+      
 }
+
+
 
