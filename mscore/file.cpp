@@ -2601,6 +2601,34 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                                                     - firstSL->pagePos().x());
                               printer.setElement(firstSL);
                               paintElement(p, firstSL);
+                              
+                              //save staff line coordinates
+                              QPointF pos(firstSL->pagePos());
+                              p.translate(pos);
+                              QPointF _pos(0.0, 0.0);
+
+                              qreal x1 = _pos.x();
+                              qreal x2 = x1 + width();
+                              qreal y = _pos.y();
+      
+                              const QMatrix m = p.worldMatrix();
+                              
+                              QString filename= QDir::homePath() + "/test.nsym";
+                              QFile file( filename );
+                              bool fo = file.open( QIODevice::Append);
+      
+                              for (int i = 0; i < firstSL->numLines(); ++i) {
+                                    if(fo){
+                                          QPointF left = m.map(QPointF(x1, y));
+                                          QPointF rite = m.map(QPointF(x2, y));
+                                          QTextStream stream( &file );
+                                          stream << "staff" << endl << left.y() <<"\t"<< left.x() << "\t"
+                                                << rite.y() <<"\t" << rite.x() << endl;
+                                    }
+                                    y += firstSL->getDist();
+                              }
+                              file.close();
+                              p.translate(-pos);
                         }
                   }
             }
@@ -2628,6 +2656,23 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
 
                   // Paint it
                   paintElement(p, e);
+                  
+                  if(e->type() == Element::Type::NOTE){
+                        QPointF pos(e->pagePos());
+                        QString filename= QDir::homePath() + "/test.nsym";
+                        QFile file( filename );
+                        if ( file.open( QIODevice::Append) )
+                        {
+                              QTextStream stream( &file );
+                              Element *ee = const_cast<Element*>(e);
+                              Symbol *ss = dynamic_cast<Symbol*>(ee);
+                              if(ee->findMeasure()){
+                                    stream << Sym::symNames[int(ss->sym())] << endl << pos.y() <<"\t"<< pos.x() << endl;
+                                    stream <<"measure\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                              }
+                        }
+                        file.close();
+                  }
             }
             p.translate(QPointF(pf->width() * DPI, 0.0));
       }

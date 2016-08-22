@@ -5626,16 +5626,16 @@ void ScoreFont::draw(SymId id, QPainter* painter, qreal mag, const QPointF& pos,
             painter->setFont(*font);
             painter->drawText(pos * imag, toString(id));
             
-            const QMatrix m = painter->worldMatrix();
-            QPointF new_pos = m.map(pos * imag);
-            QString filename= QDir::homePath() + "/test.nsym";
-            QFile file( filename );
-            if ( file.open( QIODevice::Append) )
-            {
-                  QTextStream stream( &file );
-                  stream << Sym::symNames[int(id)] << endl << new_pos.y() <<"\t"<< new_pos.x() << endl;
-                  }
-            file.close();
+//            const QMatrix m = painter->worldMatrix();
+//            QPointF new_pos = m.map(pos * imag);
+//            QString filename= QDir::homePath() + "/test.nsym";
+//            QFile file( filename );
+//            if ( file.open( QIODevice::Append) )
+//            {
+//                  QTextStream stream( &file );
+//                  stream << Sym::symNames[int(id)] << endl << new_pos.y() <<"\t"<< new_pos.x() << endl;
+//                  }
+//            file.close();
             
             painter->scale(imag, imag);
             

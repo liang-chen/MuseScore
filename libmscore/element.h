@@ -834,6 +834,8 @@ class StaffLines : public Element {
       virtual QPointF canvasPos() const;  ///< position in page coordinates
       qreal y1() const;
       qreal staffHeight() const { return (lines-1) * dist; }
+      int numLines() const {return lines; }
+      qreal getDist() const {return dist;}
       };
 
 //---------------------------------------------------------
