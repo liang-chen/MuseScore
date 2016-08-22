@@ -23,6 +23,9 @@
 #include "libmscore/element.h"
 #include "libmscore/note.h"
 #include "libmscore/rest.h"
+#include "libmscore/accidental.h"
+#include "libmscore/hook.h"
+#include "libmscore/stem.h"
 #include "libmscore/sig.h"
 #include "libmscore/clef.h"
 #include "libmscore/key.h"
@@ -2656,23 +2659,76 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
 
                   // Paint it
                   paintElement(p, e);
-                  
-                  if(e->type() == Element::Type::NOTE){
-                        QPointF pos(e->pagePos());
-                        QString filename= QDir::homePath() + "/test.nsym";
-                        QFile file( filename );
-                        if ( file.open( QIODevice::Append) )
-                        {
-                              QTextStream stream( &file );
+                
+                  // Write to disk
+                  QPointF pos(e->pagePos());
+                  QString filename= QDir::homePath() + "/test.nsym";
+                  QFile file( filename );
+                  if ( file.open( QIODevice::Append) )
+                  {
+                        QTextStream stream( &file );
+                        if(eType == Element::Type::NOTE){
+                            
                               Element *ee = const_cast<Element*>(e);
-                              Symbol *ss = dynamic_cast<Symbol*>(ee);
+                              Note *ss = dynamic_cast<Note*>(ee);
                               if(ee->findMeasure()){
-                                    stream << Sym::symNames[int(ss->sym())] << endl << pos.y() <<"\t"<< pos.x() << endl;
-                                    stream <<"measure\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                    stream << Sym::symNames[int(ss->noteHead())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
                               }
                         }
-                        file.close();
+                        else if(eType == Element::Type::REST){
+                            Element *ee = const_cast<Element*>(e);
+                            Rest *ss = dynamic_cast<Rest*>(ee);
+                            if(ee->findMeasure()){
+                                stream << Sym::symNames[int(ss->sym())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                            }
+                        }
+                        else if(eType == Element::Type::CLEF){
+                            Element *ee = const_cast<Element*>(e);
+                            
+                            if(ee->findMeasure()){
+                                Symbol *ss = dynamic_cast<Symbol*>(ee);
+                                while(ee){
+                                    //stream << Sym::symNames[int(ss->sym())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                    ee = ee->nextElement();
+                                }
+                            }
+                        }
+                        else if(eType == Element::Type::ACCIDENTAL){
+                            Element *ee = const_cast<Element*>(e);
+                            Accidental *ss = dynamic_cast<Accidental*>(ee);
+                            if(ee->findMeasure()){
+                                stream << Sym::symNames[int(ss->symbol())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                            }
+                        }
+                        else if(eType == Element::Type::HOOK){
+                            Element *ee = const_cast<Element*>(e);
+                            Hook *ss = dynamic_cast<Hook*>(ee);
+                            if(ee->findMeasure()){
+                                stream << Sym::symNames[int(ss->sym())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                            }
+                        }
+                        else if(eType == Element::Type::BAR_LINE){
+                            Element *ee = const_cast<Element*>(e);
+                            if(ee->findMeasure()){
+                                stream << "bar_line" << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                            }
+                        }
+                        else if(eType == Element::Type::STEM){
+                            Element *ee = const_cast<Element*>(e);
+                            Stem *ss = dynamic_cast<Stem*>(ee);
+                            if(ee->findMeasure()){
+                                stream << "stem" << endl << pos.y() <<"\t"<< pos.x() << "\t"<< pos.y() + ss->p2().y() <<"\t"<< pos.x() << "\t" << static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                            }
+                        }
+                        else if(eType == Element::Type::BEAM){
+                            Element *ee = const_cast<Element*>(e);
+                            Beam *ss = dynamic_cast<Beam*>(ee);
+                            for (const QLineF* bs : ss->segments()) {
+                                stream << "beam" << endl << pos.y() + bs->y1() <<"\t"<< pos.x() + bs->x1() << "\t"<< pos.y() + bs->y2() << "\t" << pos.x() + bs->x2() << endl;
+                            }
+                        }
                   }
+                  file.close();
             }
             p.translate(QPointF(pf->width() * DPI, 0.0));
       }

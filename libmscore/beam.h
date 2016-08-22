@@ -155,6 +155,7 @@ class Beam : public Element {
       bool cross() const   { return _cross; }
       virtual Shape shape() const override;
       virtual void triggerLayout() const override;
+    QVector<QLineF*> segments() { return beamSegments; }
       };
 
 
