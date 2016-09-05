@@ -2619,14 +2619,14 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                               QString filename= QDir::homePath() + "/test.nsym";
                               QFile file( filename );
                               bool fo = file.open( QIODevice::Append);
-      
+                            
                               for (int i = 0; i < firstSL->numLines(); ++i) {
                                     if(fo){
                                           QPointF left = m.map(QPointF(x1, y));
                                           QPointF rite = m.map(QPointF(x2, y));
                                           QTextStream stream( &file );
                                           stream << "staff" << endl << left.y() <<"\t"<< left.x() << "\t"
-                                                << rite.y() <<"\t" << rite.x() << endl;
+                                                << rite.y() <<"\t" << rite.x() << "\t"<< static_cast<Measure*>(firstSL->findMeasure())->no() <<endl;
                                     }
                                     y += firstSL->getDist();
                               }
@@ -2668,7 +2668,6 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                   {
                         QTextStream stream( &file );
                         if(eType == Element::Type::NOTE){
-                            
                               Element *ee = const_cast<Element*>(e);
                               Note *ss = dynamic_cast<Note*>(ee);
                               if(ee->findMeasure()){
@@ -2684,13 +2683,43 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                         }
                         else if(eType == Element::Type::CLEF){
                             Element *ee = const_cast<Element*>(e);
-                            
+                            Clef *clef = dynamic_cast<Clef*>(ee);
+                            QList<Element *>list = clef->getElements();
                             if(ee->findMeasure()){
-                                Symbol *ss = dynamic_cast<Symbol*>(ee);
-                                while(ee){
-                                    //stream << Sym::symNames[int(ss->sym())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
-                                    ee = ee->nextElement();
+                                for(Element *temp : list){
+                                    Symbol *ss = dynamic_cast<Symbol*>(temp);
+                                    stream << Sym::symNames[int(ss->sym())] << endl << pos.y() + temp->pos().y() <<"\t"<< pos.x() + temp->pos().x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
                                 }
+                            }
+                        }
+                        else if(eType == Element::Type::KEYSIG){
+                            Element *ee = const_cast<Element*>(e);
+                            KeySig *ss = dynamic_cast<KeySig *>(ee);
+                            char name[100];
+                            for (const KeySym& ks: ss->keySigEvent().keySymbols()){
+                                strcpy(name, Sym::symNames[int(ks.sym)]);
+                                strcat(name, "Key");
+                                stream << name << endl << pos.y() + ks.pos.y() <<"\t"<< pos.x() + ks.pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                            }
+                        }
+                        else if(eType == Element::Type::TIMESIG){
+                            Element *ee = const_cast<Element*>(e);
+                            TimeSig *ss = dynamic_cast<TimeSig*>(ee);
+                            
+                            std::vector<SymId> ns = ss->toTimeSigString(ss->numeratorString());
+                            std::vector<SymId> ds = ss->toTimeSigString(ss->denominatorString());
+                            
+                            for(const SymId id: ns){
+                                stream << Sym::symNames[int(id)] << endl << pos.y() + ss->getPz().y() <<"\t"<< pos.x() + ss->getPz().x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                            }
+                            for(const SymId id: ds){
+                                stream << Sym::symNames[int(id)] << endl << pos.y() + ss->getPn().y() <<"\t"<< pos.x() + ss->getPn().x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                            }
+                        }
+                        else if(eType == Element::Type::LEDGER_LINE){
+                            Element *ee = const_cast<Element*>(e);
+                            if(ee->findMeasure()){
+                                stream << "ledger_line" << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::ACCIDENTAL){

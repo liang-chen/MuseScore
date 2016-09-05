@@ -95,6 +95,8 @@ class TimeSig : public Element {
       Q_INVOKABLE void setSig(int z, int n, int st = static_cast<int>(TimeSigType::NORMAL)) { setSig(Fraction(z, n), static_cast<TimeSigType>(st)); }
       int numerator() const              { return _sig.numerator(); }
       int denominator() const            { return _sig.denominator(); }
+      QPointF getPz() {return pz; }
+      QPointF getPn() {return pn; }
 
       Fraction stretch() const           { return _stretch;   }
       void setStretch(const Fraction& s) { _stretch = s;      }

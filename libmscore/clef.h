@@ -185,6 +185,8 @@ class Clef : public Element {
       virtual Element* nextElement() override;
       virtual Element* prevElement() override;
       QString accessibleInfo() const override;
+    
+      QList<Element*> getElements() {return elements;}
 
       void clear();
       };
