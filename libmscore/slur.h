@@ -107,6 +107,8 @@ class SlurSegment : public SpannerSegment {
       virtual QVariant getProperty(P_ID propertyId) const;
       virtual bool setProperty(P_ID propertyId, const QVariant&);
       virtual QVariant propertyDefault(P_ID id) const;
+    
+      QPainterPath getPath(){return path;}
 
       SlurTie* slurTie() const { return (SlurTie*)spanner(); }
 

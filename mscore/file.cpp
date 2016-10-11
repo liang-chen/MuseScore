@@ -33,6 +33,7 @@
 #include "libmscore/score.h"
 #include "libmscore/page.h"
 #include "libmscore/dynamic.h"
+#include "libmscore/slur.h"
 #include "file.h"
 #include "libmscore/style.h"
 #include "libmscore/tempo.h"
@@ -2755,6 +2756,13 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                             for (const QLineF* bs : ss->segments()) {
                                 stream << "beam" << endl << pos.y() + bs->y1() <<"\t"<< pos.x() + bs->x1() << "\t"<< pos.y() + bs->y2() << "\t" << pos.x() + bs->x2() << endl;
                             }
+                        }
+                        else if(eType == Element::Type::SLUR_SEGMENT){
+                            Element *ee = const_cast<Element*>(e);
+                            SlurSegment *ss = dynamic_cast<SlurSegment*>(ee);
+                            QPainterPath path = ss->getPath();
+                            stream << "slur" << endl << pos.y() + path.pointAtPercent(0).y() << "\t" << pos.x() + path.pointAtPercent(0).x() << "\t" << pos.y() + path.pointAtPercent(0.25).y()
+                                             << "\t" << pos.x() + path.pointAtPercent(0.25).x() << "\t" << pos.y() + path.pointAtPercent(0.5).y() << "\t" << pos.x() + path.pointAtPercent(0.5).x() <<endl;
                         }
                   }
                   file.close();
