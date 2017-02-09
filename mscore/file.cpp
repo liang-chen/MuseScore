@@ -2627,7 +2627,7 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                                           QPointF rite = m.map(QPointF(x2, y));
                                           QTextStream stream( &file );
                                           stream << "staff" << endl << left.y() <<"\t"<< left.x() << "\t"
-                                                << rite.y() <<"\t" << rite.x() << "\t"<< static_cast<Measure*>(firstSL->findMeasure())->no() <<endl;
+                                                << rite.y() <<"\t" << rite.x() << "\t"<< static_cast<Measure*>(firstSL->findMeasure())->no() << "\t" << page->no() << endl;
                                     }
                                     y += firstSL->getDist();
                               }
@@ -2672,14 +2672,14 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                               Element *ee = const_cast<Element*>(e);
                               Note *ss = dynamic_cast<Note*>(ee);
                               if(ee->findMeasure()){
-                                    stream << Sym::symNames[int(ss->noteHead())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                    stream << Sym::symNames[int(ss->noteHead())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                               }
                         }
                         else if(eType == Element::Type::REST){
                             Element *ee = const_cast<Element*>(e);
                             Rest *ss = dynamic_cast<Rest*>(ee);
                             if(ee->findMeasure()){
-                                stream << Sym::symNames[int(ss->sym())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                stream << Sym::symNames[int(ss->sym())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::CLEF){
@@ -2689,7 +2689,7 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                             if(ee->findMeasure()){
                                 for(Element *temp : list){
                                     Symbol *ss = dynamic_cast<Symbol*>(temp);
-                                    stream << Sym::symNames[int(ss->sym())] << endl << pos.y() + temp->pos().y() <<"\t"<< pos.x() + temp->pos().x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                    stream << Sym::symNames[int(ss->sym())] << endl << pos.y() + temp->pos().y() <<"\t"<< pos.x() + temp->pos().x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                                 }
                             }
                         }
@@ -2700,7 +2700,7 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                             for (const KeySym& ks: ss->keySigEvent().keySymbols()){
                                 strcpy(name, Sym::symNames[int(ks.sym)]);
                                 strcat(name, "Key");
-                                stream << name << endl << pos.y() + ks.pos.y() <<"\t"<< pos.x() + ks.pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                stream << name << endl << pos.y() + ks.pos.y() <<"\t"<< pos.x() + ks.pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::TIMESIG){
@@ -2711,50 +2711,50 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                             std::vector<SymId> ds = ss->toTimeSigString(ss->denominatorString());
                             
                             for(const SymId id: ns){
-                                stream << Sym::symNames[int(id)] << endl << pos.y() + ss->getPz().y() <<"\t"<< pos.x() + ss->getPz().x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                stream << Sym::symNames[int(id)] << endl << pos.y() + ss->getPz().y() <<"\t"<< pos.x() + ss->getPz().x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                             }
                             for(const SymId id: ds){
-                                stream << Sym::symNames[int(id)] << endl << pos.y() + ss->getPn().y() <<"\t"<< pos.x() + ss->getPn().x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                stream << Sym::symNames[int(id)] << endl << pos.y() + ss->getPn().y() <<"\t"<< pos.x() + ss->getPn().x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::LEDGER_LINE){
                             Element *ee = const_cast<Element*>(e);
                             if(ee->findMeasure()){
-                                stream << "ledger_line" << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                stream << "ledger_line" << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::ACCIDENTAL){
                             Element *ee = const_cast<Element*>(e);
                             Accidental *ss = dynamic_cast<Accidental*>(ee);
                             if(ee->findMeasure()){
-                                stream << Sym::symNames[int(ss->symbol())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                stream << Sym::symNames[int(ss->symbol())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::HOOK){
                             Element *ee = const_cast<Element*>(e);
                             Hook *ss = dynamic_cast<Hook*>(ee);
                             if(ee->findMeasure()){
-                                stream << Sym::symNames[int(ss->sym())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                stream << Sym::symNames[int(ss->sym())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::BAR_LINE){
                             Element *ee = const_cast<Element*>(e);
                             if(ee->findMeasure()){
-                                stream << "bar_line" << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                stream << "bar_line" << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::STEM){
                             Element *ee = const_cast<Element*>(e);
                             Stem *ss = dynamic_cast<Stem*>(ee);
                             if(ee->findMeasure()){
-                                stream << "stem" << endl << pos.y() <<"\t"<< pos.x() << "\t"<< pos.y() + ss->p2().y() <<"\t"<< pos.x() << "\t" << static_cast<Measure*>(ee->findMeasure())->no() << endl;
+                                stream << "stem" << endl << pos.y() <<"\t"<< pos.x() << "\t"<< pos.y() + ss->p2().y() <<"\t"<< pos.x() << "\t" << static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::BEAM){
                             Element *ee = const_cast<Element*>(e);
                             Beam *ss = dynamic_cast<Beam*>(ee);
                             for (const QLineF* bs : ss->segments()) {
-                                stream << "beam" << endl << pos.y() + bs->y1() <<"\t"<< pos.x() + bs->x1() << "\t"<< pos.y() + bs->y2() << "\t" << pos.x() + bs->x2() << endl;
+                                stream << "beam" << endl << pos.y() + bs->y1() <<"\t"<< pos.x() + bs->x1() << "\t"<< pos.y() + bs->y2() << "\t" << pos.x() + bs->x2() << "\t" << page->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::SLUR_SEGMENT){
@@ -2762,7 +2762,7 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                             SlurSegment *ss = dynamic_cast<SlurSegment*>(ee);
                             QPainterPath path = ss->getPath();
                             stream << "slur" << endl << pos.y() + path.pointAtPercent(0).y() << "\t" << pos.x() + path.pointAtPercent(0).x() << "\t" << pos.y() + path.pointAtPercent(0.25).y()
-                                             << "\t" << pos.x() + path.pointAtPercent(0.25).x() << "\t" << pos.y() + path.pointAtPercent(0.5).y() << "\t" << pos.x() + path.pointAtPercent(0.5).x() <<endl;
+                                             << "\t" << pos.x() + path.pointAtPercent(0.25).x() << "\t" << pos.y() + path.pointAtPercent(0.5).y() << "\t" << pos.x() + path.pointAtPercent(0.5).x() << "\t" << page->no() << endl;
                         }
                   }
                   file.close();
