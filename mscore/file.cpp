@@ -46,7 +46,6 @@
 #include "libmscore/barline.h"
 #include "palette.h"
 #include "symboldialog.h"
-#include "libmscore/slur.h"
 #include "libmscore/hairpin.h"
 #include "libmscore/ottava.h"
 #include "libmscore/textline.h"
@@ -2728,6 +2727,12 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                             Accidental *ss = dynamic_cast<Accidental*>(ee);
                             if(ee->findMeasure()){
                                 stream << Sym::symNames[int(ss->symbol())] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
+                            }
+                        }
+                        else if(eType == Element::Type::NOTEDOT){
+                            Element *ee = const_cast<Element*>(e);
+                            if(ee->findMeasure()){
+                                stream << Sym::symNames[int(SymId::augmentationDot)] << endl << pos.y() <<"\t"<< pos.x() << "\t"<< static_cast<Measure*>(ee->findMeasure())->no() << "\t" << page->no() << endl;
                             }
                         }
                         else if(eType == Element::Type::HOOK){
