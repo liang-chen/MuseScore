@@ -2607,26 +2607,33 @@ bool MuseScore::saveSvg(Score* score, const QString& saveName)
                               
                               //save staff line coordinates
                               QPointF pos(firstSL->pagePos());
-                              p.translate(pos);
-                              QPointF _pos(0.0, 0.0);
-
-                              qreal x1 = _pos.x();
-                              qreal x2 = x1 + width();
-                              qreal y = _pos.y();
-      
-                              const QMatrix m = p.worldMatrix();
-                              
+//                              p.translate(pos);
+//                              QPointF _pos(0.0, 0.0);
+//
+//                              qreal x1 = _pos.x();
+//                              qreal x2 = x1 + width();
+//                              qreal y = _pos.y();
+//      
+//                              const QMatrix m = p.worldMatrix();
+                            
                               QString filename= QDir::homePath() + "/test.nsym";
                               QFile file( filename );
                               bool fo = file.open( QIODevice::Append);
                             
+                              qreal lx = pos.x();
+                              qreal y = pos.y();
+                              qreal rx = lx + width();
                               for (int i = 0; i < firstSL->numLines(); ++i) {
                                     if(fo){
-                                          QPointF left = m.map(QPointF(x1, y));
-                                          QPointF rite = m.map(QPointF(x2, y));
-                                          QTextStream stream( &file );
-                                          stream << "staff" << endl << left.y() <<"\t"<< left.x() << "\t"
-                                                << rite.y() <<"\t" << rite.x() << "\t"<< static_cast<Measure*>(firstSL->findMeasure())->no() << "\t" << page->no() << endl;
+//                                          QPointF left = m.map(QPointF(x1, y));
+//                                          QPointF rite = m.map(QPointF(x2, y));
+//                                          QTextStream stream( &file );
+//                                          stream << "staff" << endl << left.y() <<"\t"<< left.x() << "\t"
+//                                                << rite.y() <<"\t" << rite.x() << "\t"<< static_cast<Measure*>(firstSL->findMeasure())->no() << "\t" << page->no() << endl;
+                                        
+                                        QTextStream stream( &file );
+                                        stream << "staff" << endl << y <<"\t"<< lx << "\t"
+                                        << y << "\t" << rx << "\t"<< static_cast<Measure*>(firstSL->findMeasure())->no() << "\t" << page->no() << endl;
                                     }
                                     y += firstSL->getDist();
                               }
